@@ -7,7 +7,6 @@ import {
   setupWebsite,
   downloadItemsDat,
   downloadMacOSItemsDat,
-  fetchJSON,
   Collection,
   RTTEX,
 } from "@growserver/utils";
@@ -16,7 +15,7 @@ import { ConnectListener } from "../events/Connect";
 import { DisconnectListener } from "../events/Disconnect";
 import { type PackageJson } from "type-fest";
 import { RawListener } from "../events/Raw";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import {
   Cache,
   CDNContent,
@@ -29,13 +28,81 @@ import { Peer } from "./Peer";
 import { World } from "./World";
 import { mkdir, writeFile, readFile } from "fs/promises";
 import chokidar from "chokidar";
-import ky from "ky";
-import { ITEMS_DAT_FETCH_URL } from "@growserver/const";
-import { ItemsDat, ItemsDatMeta } from "grow-items";
+import { ActionTypes, BlockFlags, ITEMS_DAT_NAME } from "@growserver/const";
+import { ItemsDat, ItemsDatMeta, type ItemDefinition } from "grow-items";
 import { config as configServer } from "@growserver/config";
 import logger from "@growserver/logger";
 
 __dirname = process.cwd();
+
+const CORE_ITEM_OVERRIDES: Record<number, Partial<ItemDefinition>> = {
+  0: { name: "Blank", type: ActionTypes.FOREGROUND, collisionType: 0 },
+  2: { name: "Dirt", type: ActionTypes.FOREGROUND, collisionType: 1 },
+  3: { name: "Dirt Seed", type: ActionTypes.SEED, growTime: 30 },
+  4: { name: "Lava", type: ActionTypes.FOREGROUND, collisionType: 1 },
+  5: { name: "Lava Seed", type: ActionTypes.SEED, growTime: 30 },
+  6: {
+    name:          "Main Door",
+    type:          ActionTypes.MAIN_DOOR,
+    flags:         BlockFlags.WRENCHABLE | BlockFlags.MOD | BlockFlags.PUBLIC,
+    collisionType: 0,
+    breakHits:     999999,
+  },
+  8: {
+    name:          "Bedrock",
+    type:          ActionTypes.FOREGROUND,
+    flags:         BlockFlags.MOD,
+    collisionType: 1,
+    breakHits:     999999,
+  },
+  9:  { name: "Bedrock Seed", type: ActionTypes.SEED, growTime: 30 },
+  10: { name: "Rock", type: ActionTypes.FOREGROUND, collisionType: 1 },
+  11: { name: "Rock Seed", type: ActionTypes.SEED, growTime: 30 },
+  14: {
+    name:          "Cave Background",
+    type:          ActionTypes.BACKGROUND,
+    collisionType: 0,
+  },
+  15:  { name: "Cave Background Seed", type: ActionTypes.SEED, growTime: 30 },
+  18:  { name: "Fist", type: ActionTypes.FIST, maxAmount: 1 },
+  32:  { name: "Wrench", type: ActionTypes.WRENCH, maxAmount: 1 },
+  112: { name: "Gem", type: ActionTypes.GEMS, maxAmount: 200 },
+  202: {
+    name:  "Small Lock",
+    type:  ActionTypes.LOCK,
+    flags: BlockFlags.WRENCHABLE,
+  },
+  204: {
+    name:  "Big Lock",
+    type:  ActionTypes.LOCK,
+    flags: BlockFlags.WRENCHABLE,
+  },
+  206: {
+    name:  "Huge Lock",
+    type:  ActionTypes.LOCK,
+    flags: BlockFlags.WRENCHABLE,
+  },
+  242: {
+    name:  "World Lock",
+    type:  ActionTypes.LOCK,
+    flags: BlockFlags.WRENCHABLE,
+  },
+  1796: {
+    name:  "Diamond Lock",
+    type:  ActionTypes.LOCK,
+    flags: BlockFlags.WRENCHABLE,
+  },
+  4994: {
+    name:  "Builder's Lock",
+    type:  ActionTypes.LOCK,
+    flags: BlockFlags.WRENCHABLE,
+  },
+  7188: {
+    name:  "Blue Gem Lock",
+    type:  ActionTypes.LOCK,
+    flags: BlockFlags.WRENCHABLE,
+  },
+};
 
 export class Base {
   public server: Client;
@@ -90,6 +157,22 @@ export class Base {
       }
 
       this.cdn = await this.getLatestCdn();
+      if (!this.cdn.itemsDatName) {
+        const cachedItemsDatName = this.getCachedItemsDatName();
+        if (!cachedItemsDatName) {
+          throw new Error(
+            "No cached items.dat found and items.dat metadata is unavailable.",
+          );
+        }
+
+        this.cdn = {
+          version:      this.getItemsDatVersion(cachedItemsDatName),
+          uri:          "",
+          itemsDatName: cachedItemsDatName,
+        };
+        logger.warn(`Using cached items.dat: ${cachedItemsDatName}`);
+      }
+
       await downloadItemsDat(this.cdn.itemsDatName);
       await downloadMacOSItemsDat(this.cdn.itemsDatName);
 
@@ -176,14 +259,197 @@ export class Base {
     }
   }
 
-  private async loadItems() {
-    const itemsDat = new ItemsDat(
-      Array.from(
-        await readFile(
-          join(__dirname, ".cache", "growtopia", "dat", this.cdn.itemsDatName),
-        ),
-      ),
+  private normalizeItemMetadata(metadata: ItemsDatMeta) {
+    const parsedItems = new Map<string | number, ItemDefinition>(
+      metadata.items as unknown as Iterable<[string | number, ItemDefinition]>,
     );
+    const parsedSize = parsedItems.size;
+    const maxKnownItemId = Math.max(
+      ...Object.keys(CORE_ITEM_OVERRIDES).map(Number),
+    );
+    const itemCount = Math.max(
+      metadata.itemCount ?? 0,
+      parsedSize,
+      maxKnownItemId + 1,
+    );
+
+    metadata.itemCount = itemCount;
+    metadata.items.clear();
+
+    const normalizedItems = metadata.items as unknown as Map<
+      string | number,
+      ItemDefinition
+    >;
+
+    for (let id = 0; id < itemCount; id++) {
+      const item = this.normalizeItemDefinition(
+        id,
+        parsedItems.get(id) ?? parsedItems.get(id.toString()),
+      );
+
+      normalizedItems.set(id, item);
+    }
+
+    this.useFlexibleItemLookup(normalizedItems);
+
+    if (parsedSize < itemCount) {
+      logger.warn(
+        `Item metadata parser returned ${parsedSize}/${itemCount} entries; filled missing item definitions with safe defaults`,
+      );
+    }
+  }
+
+  private useFlexibleItemLookup(items: Map<string | number, ItemDefinition>) {
+    items.get = ((key: string | number) => {
+      const direct = Map.prototype.get.call(items, key) as
+        | ItemDefinition
+        | undefined;
+      if (direct !== undefined) return direct;
+
+      if (typeof key === "string" && /^-?\d+$/.test(key)) {
+        return Map.prototype.get.call(items, Number(key)) as
+          | ItemDefinition
+          | undefined;
+      }
+
+      if (typeof key === "number") {
+        return Map.prototype.get.call(items, key.toString()) as
+          | ItemDefinition
+          | undefined;
+      }
+
+      return undefined;
+    }) as typeof items.get;
+  }
+
+  private normalizeItemDefinition(
+    id: number,
+    item?: ItemDefinition,
+  ): ItemDefinition {
+    const normalized: ItemDefinition = { ...(item ?? {}) };
+    const fallback: ItemDefinition = {
+      id,
+      name:               `Item ${id}`,
+      flags:              0,
+      flags2:             0,
+      flags3:             0,
+      type:               ActionTypes.FOREGROUND,
+      materialType:       0,
+      collisionType:      1,
+      breakHits:          6,
+      resetStateAfter:    4,
+      bodyPartType:       0,
+      blockType:          0,
+      growTime:           0,
+      rarity:             1,
+      maxAmount:          200,
+      texture:            "",
+      textureHash:        0,
+      textureX:           0,
+      textureY:           0,
+      storageType:        0,
+      visualEffectType:   0,
+      cookingTime:        0,
+      extraFile:          "",
+      extraFileHash:      0,
+      audioVolume:        0,
+      seedBase:           0,
+      seedOverlay:        0,
+      treeBase:           0,
+      treeLeaves:         0,
+      seedColor:          0,
+      seedOverlayColor:   0,
+      isMultiFace:        0,
+      isStripeyWallpaper: 0,
+      extraOptions:       "",
+      texture2:           "",
+      extraOptions2:      "",
+      punchOptions:       "",
+      tileRange:          4,
+      ...CORE_ITEM_OVERRIDES[id],
+    };
+
+    for (const [key, value] of Object.entries(fallback)) {
+      if (normalized[key] === undefined) normalized[key] = value;
+    }
+
+    normalized.id = id;
+
+    if (!normalized.name) normalized.name = `Item ${id}`;
+
+    return normalized;
+  }
+
+  private loadWikiItems(wikiFile: string): ItemsInfo[] {
+    let parsed: ItemsInfo[] = [];
+    try {
+      const json = JSON.parse(wikiFile);
+      if (Array.isArray(json)) parsed = json as ItemsInfo[];
+    } catch (error) {
+      logger.warn(`Ignoring invalid items_info_new.json: ${error}`);
+    }
+
+    const itemCount =
+      this.items.metadata.itemCount ?? this.items.metadata.items.size;
+    const wikiById = new Map<number, ItemsInfo>();
+
+    for (const item of parsed) {
+      if (
+        !Number.isInteger(item?.id) ||
+        item.id < 0 ||
+        item.id >= itemCount ||
+        typeof item.name !== "string"
+      ) {
+        continue;
+      }
+
+      wikiById.set(item.id, {
+        id:     item.id,
+        name:   item.name,
+        desc:   item.desc ?? "",
+        recipe: { splice: item.recipe?.splice ?? [] },
+        func:   {
+          add: item.func?.add ?? "",
+          rem: item.func?.rem ?? "",
+        },
+        playMods: item.playMods ?? [],
+        chi:      item.chi ?? "",
+      });
+    }
+
+    if (wikiById.size < parsed.length) {
+      logger.warn(
+        `Filtered invalid item-info entries: kept ${wikiById.size}/${parsed.length}`,
+      );
+    }
+
+    for (const item of this.items.metadata.items.values()) {
+      if (!Number.isInteger(item.id) || wikiById.has(item.id!)) continue;
+
+      wikiById.set(item.id!, {
+        id:       item.id!,
+        name:     item.name ?? `Item ${item.id}`,
+        desc:     "",
+        recipe:   { splice: [] },
+        func:     { add: "", rem: "" },
+        playMods: [],
+        chi:      "",
+      });
+    }
+
+    return Array.from(wikiById.values());
+  }
+
+  private async loadItems() {
+    const itemsDatPath = join(
+      __dirname,
+      ".cache",
+      "growtopia",
+      "dat",
+      this.cdn.itemsDatName,
+    );
+    const rawItemsDat = await readFile(itemsDatPath);
+    const itemsDat = new ItemsDat(Array.from(rawItemsDat));
     await itemsDat.decode();
     // logger.info("Loading custom items...");
 
@@ -287,43 +553,59 @@ export class Base {
     //   consola.error("Failed to load custom items: " + e);
     // }
 
-    await itemsDat.encode();
+    const hash = RTTEX.hash(rawItemsDat);
+    this.normalizeItemMetadata(itemsDat.meta);
 
-    const bufData = Buffer.from(itemsDat.buffer.data);
-    const hash = RTTEX.hash(bufData);
-    this.items.content = bufData;
+    this.items.content = rawItemsDat;
     this.items.hash = `${hash}`;
     this.items.metadata = itemsDat.meta;
+
+    const cdnCacheDir = join(__dirname, ".cache", "growtopia", "cache");
+    const cdnRootDir = join(__dirname, ".cache", "growtopia");
+    await mkdir(cdnCacheDir, { recursive: true });
+    await writeFile(join(cdnRootDir, "items.dat"), rawItemsDat);
+    await writeFile(join(cdnRootDir, this.cdn.itemsDatName), rawItemsDat);
+    await writeFile(join(cdnCacheDir, "items.dat"), rawItemsDat);
+    await writeFile(join(cdnCacheDir, this.cdn.itemsDatName), rawItemsDat);
 
     const wikiFile = await readFile(
       join(__dirname, "assets", "items_info_new.json"),
       "utf-8",
     );
-    this.items.wiki = JSON.parse(wikiFile) as ItemsInfo[];
+    this.items.wiki = this.loadWikiItems(wikiFile);
 
     logger.info(`Items data hash: ${hash}`);
     logger.info("Successfully parsing items data");
   }
 
   public async getLatestCdn() {
+    const data: CDNContent = {
+      version:      this.getItemsDatVersion(ITEMS_DAT_NAME),
+      uri:          "",
+      itemsDatName: ITEMS_DAT_NAME,
+    };
+
+    return data;
+  }
+
+  private getItemsDatVersion(itemsDatName: string) {
+    return itemsDatName.match(/^items-v(\d+\.\d+)\.dat$/)?.[1] ?? "";
+  }
+
+  private getCachedItemsDatName(): string {
     try {
-      const cdnData = (await fetchJSON(
-        "https://mari-project.jad.li/api/v1/growtopia/cache/latest",
-      )) as CDNContent;
-      const itemsDat = (await fetchJSON(ITEMS_DAT_FETCH_URL)) as {
-        content: string;
-      };
+      const datDir = join(__dirname, ".cache", "growtopia", "dat");
+      const versions = readdirSync(datDir)
+        .map((fileName) => ({
+          fileName,
+          version: Number(this.getItemsDatVersion(fileName)),
+        }))
+        .filter(({ version }) => Number.isFinite(version))
+        .sort((a, b) => b.version - a.version);
 
-      const data: CDNContent = {
-        version:      cdnData.version,
-        uri:          cdnData.uri,
-        itemsDatName: itemsDat.content,
-      };
-
-      return data;
-    } catch (e) {
-      logger.error(`Failed to get latest CDN: ${e}`);
-      return { version: "", uri: "", itemsDatName: "" };
+      return versions[0]?.fileName ?? "";
+    } catch {
+      return "";
     }
   }
 

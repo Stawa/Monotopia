@@ -1,7 +1,5 @@
-export const ITEMS_DAT_URL =
-  "https://raw.githubusercontent.com/StileDevs/itemsdat-archive/refs/heads/main";
-export const ITEMS_DAT_FETCH_URL =
-  "https://raw.githubusercontent.com/StileDevs/itemsdat-archive/refs/heads/main/latest.json";
+export const ITEMS_DAT_URL = "https://monotopia-cache.netlify.app/growtopia";
+export const ITEMS_DAT_NAME = "items-v5.48.dat";
 
 export enum PacketTypes {
   HELLO = 1,

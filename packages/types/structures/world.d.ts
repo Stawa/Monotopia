@@ -23,6 +23,7 @@ export interface TileData {
   dice?: Dice;
   provider?: Provider;
   displayBlock?: DisplayBlock;
+  vendingMachine?: VendingMachine;
 }
 
 export interface Provider {
@@ -148,6 +149,16 @@ export interface HeartMonitor {
 
 export interface DisplayBlock {
   displayedItem: number;
+}
+
+export interface VendingMachine {
+  itemID: number;
+  amount: number;
+  itemAmount: number;
+  wlPrice: number;
+  ownerUserID: number;
+  price?: number;
+  priceMode?: "world_locks_per_item" | "items_per_world_lock";
 }
 
 export interface Dice {

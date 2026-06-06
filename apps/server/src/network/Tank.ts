@@ -29,6 +29,8 @@ export class ITankPacket {
       const type = this.tank.data?.type as number;
       const Class = TankMap[type];
 
+      if (type === TankTypes.PING_REQUEST) return;
+
       if (!Class)
         throw new Error(
           `No TankPacket class found with type ${TankTypes[type]} (${type})`,

@@ -2,15 +2,16 @@ import {
   createWriteStream,
   existsSync,
   mkdirSync,
+  writeFileSync,
   readdirSync,
   unlinkSync,
 } from "fs";
 import { join } from "path";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import net from "net";
 import ky from "ky";
 import decompress from "decompress";
-import { ITEMS_DAT_FETCH_URL, ITEMS_DAT_URL, ROLE } from "@growserver/const";
+import { ITEMS_DAT_NAME, ITEMS_DAT_URL, ROLE } from "@growserver/const";
 import logger from "@growserver/logger";
 
 __dirname = process.cwd();
@@ -151,10 +152,26 @@ export async function downloadMacOSItemsDat(itemsDatName: string) {
   }
 
   logger.info(`Downloading macOS items.dat version ${currentVersion}`);
-  await downloadFile(
-    `${ITEMS_DAT_URL}/${macosItemsDatName}`,
-    macosItemsDatPath,
-  );
+  const macosItemsDatUrl = `${ITEMS_DAT_URL}/${macosItemsDatName}`;
+
+  try {
+    const response = await ky.head(macosItemsDatUrl, {
+      redirect: "follow",
+      throwHttpErrors: false,
+    });
+
+    if (response.status === 404) {
+      logger.warn(
+        `${macosItemsDatName} is unavailable; macOS clients will use the default items.dat hash.`,
+      );
+      return;
+    }
+  } catch (error) {
+    logger.warn(`Could not verify macOS items.dat availability: ${error}`);
+    return;
+  }
+
+  await downloadFile(macosItemsDatUrl, macosItemsDatPath);
 }
 
 export async function downloadMkcert() {
@@ -164,15 +181,14 @@ export async function downloadMkcert() {
       ? "mkcert"
       : "mkcert.exe";
 
-  if (!existsSync(join(__dirname, ".cache", "bin")))
-    mkdirSync(join(__dirname, ".cache", "bin"), { recursive: true });
-  else return;
+  const binDir = join(__dirname, ".cache", "bin");
+  const mkcertExecutable = join(binDir, name);
+
+  if (!existsSync(binDir)) mkdirSync(binDir, { recursive: true });
+  if (existsSync(mkcertExecutable)) return;
 
   logger.info("Downloading mkcert");
-  await downloadFile(
-    mkcertObj[checkPlatform],
-    join(__dirname, ".cache", "bin", name),
-  );
+  await downloadFile(mkcertObj[checkPlatform], mkcertExecutable);
 }
 
 export async function setupMkcert() {
@@ -182,16 +198,42 @@ export async function setupMkcert() {
       : "mkcert.exe";
   const mkcertExecuteable = join(__dirname, ".cache", "bin", name);
   const sslDir = join(__dirname, ".cache", "ssl");
+  const certName = "_wildcard.growserver.app.pem";
+  const keyName = "_wildcard.growserver.app-key.pem";
+  const markerPath = join(sslDir, ".mkcert-hosts-v3");
+  const hosts = [
+    "*.growserver.app",
+    "login.growtopiagame.com",
+    "www.growtopia1.com",
+    "www.growtopia2.com",
+    "growtopia1.com",
+    "growtopia2.com",
+  ];
 
   if (!existsSync(sslDir)) mkdirSync(sslDir, { recursive: true });
-  else return;
+  if (
+    existsSync(join(sslDir, certName)) &&
+    existsSync(join(sslDir, keyName)) &&
+    existsSync(markerPath)
+  )
+    return;
 
   logger.info("Setup mkcert certificate");
   try {
-    execSync(
-      `cd ${join(__dirname, ".cache", "ssl")} && ${mkcertExecuteable} -install && ${mkcertExecuteable} *.growserver.app`,
-      { stdio: "inherit" },
+    try {
+      execFileSync(mkcertExecuteable, ["-install"], { stdio: "inherit" });
+    } catch (e) {
+      logger.warn(
+        `mkcert install step failed, continuing with cert creation: ${e}`,
+      );
+    }
+
+    execFileSync(
+      mkcertExecuteable,
+      ["-cert-file", certName, "-key-file", keyName, ...hosts],
+      { cwd: sslDir, stdio: "inherit" },
     );
+    writeFileSync(markerPath, hosts.join("\n"));
   } catch (e) {
     logger.error(`Something wrong when setup mkcert: ${e}`);
   }
@@ -315,15 +357,7 @@ export function formatToDisplayName(name: string, role: string): string {
 }
 
 export async function getLatestItemsDatName() {
-  try {
-    const itemsDat = (await fetchJSON(ITEMS_DAT_FETCH_URL)) as {
-      content: string;
-    };
-    return itemsDat.content;
-  } catch (e) {
-    logger.error(`Failed to get latest CDN: ${e}`);
-    return "";
-  }
+  return ITEMS_DAT_NAME;
 }
 
 /**

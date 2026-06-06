@@ -1,7 +1,10 @@
 "use strict";
 
+import { downloadMkcert, setupMkcert } from "@growserver/utils";
+
 async function setup() {
-  // nothing todo here for now
+  await downloadMkcert();
+  await setupMkcert();
 }
 
 (async () => {

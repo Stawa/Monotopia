@@ -14,6 +14,7 @@ import { SwitcheROO } from "./SwitcheROO";
 import { WeatherTile } from "./WeatherTile";
 import { DiceTile } from "./DiceTile";
 import { SeedTile } from "./SeedTile";
+import { VendingMachineTile } from "./VendingMachineTile";
 import { ExtendBuffer } from "@growserver/utils";
 import { TankPacket } from "growtopia.js";
 import logger from "@growserver/logger";
@@ -29,9 +30,43 @@ const TileMap: Record<number, Class<Tile>> = {
   [ActionTypes.SWITCHEROO]:      SwitcheROO,
   [ActionTypes.WEATHER_MACHINE]: WeatherTile,
   [ActionTypes.DICE]:            DiceTile,
+  [ActionTypes.VENDING_MACHINE]: VendingMachineTile,
   [ActionTypes.BACKGROUND]:      NormalTile,
   [ActionTypes.FOREGROUND]:      NormalTile,
   [ActionTypes.SEED]:            SeedTile,
+};
+
+const CoreItemTypeFallback: Record<number, ActionTypes> = {
+  2:  ActionTypes.FOREGROUND,
+  4:  ActionTypes.FOREGROUND,
+  6:  ActionTypes.MAIN_DOOR,
+  8:  ActionTypes.FOREGROUND,
+  10: ActionTypes.FOREGROUND,
+  14: ActionTypes.BACKGROUND,
+};
+
+const getTileType = (
+  base: Base,
+  data: TileData,
+  itemType?: ActionTypes,
+): ActionTypes => {
+  if (itemType !== undefined) return itemType;
+  if (data.door) {
+    if (data.fg === 6) return ActionTypes.MAIN_DOOR;
+    return ActionTypes.DOOR;
+  }
+  if (data.sign) return ActionTypes.SIGN;
+  if (data.lock || data.worldLockData) return ActionTypes.LOCK;
+  if (data.heartMonitor) return ActionTypes.HEART_MONITOR;
+  if (data.displayBlock) return ActionTypes.DISPLAY_BLOCK;
+  if (data.dice) return ActionTypes.DICE;
+  if (data.tree) return ActionTypes.SEED;
+  if (data.vendingMachine) return ActionTypes.VENDING_MACHINE;
+
+  const item = base.items.metadata.items.get(data.fg.toString());
+  if (item?.type !== undefined) return item.type as ActionTypes;
+
+  return CoreItemTypeFallback[data.fg] ?? ActionTypes.FOREGROUND;
 };
 
 // constructs a new Tile subclass based on the ActionType.
@@ -43,10 +78,10 @@ const tileFrom = (
   data: TileData,
   itemType?: ActionTypes,
 ) => {
-  const type =
-    itemType ?? base.items.metadata.items.get(data.fg.toString())!.type!;
+  const type = getTileType(base, data, itemType);
   try {
-    const tile = new TileMap[type](base, world, data);
+    const TileClass = TileMap[type] ?? NormalTile;
+    const tile = new TileClass(base, world, data);
     return tile;
   } catch (e) {
     logger.debug(e);

@@ -4,7 +4,7 @@ import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { NonEmptyObject } from "type-fest";
 import { deflateSync } from "zlib";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
 export class RefreshItemData {
@@ -28,7 +28,13 @@ export class RefreshItemData {
         ".dat",
         "-osx.dat",
       );
-      itemsContent = readFileSync(join(datDir, macosItemsDatName));
+      const macosItemsDatPath = join(datDir, macosItemsDatName);
+
+      if (existsSync(macosItemsDatPath)) {
+        itemsContent = readFileSync(macosItemsDatPath);
+      } else {
+        itemsContent = this.base.items.content;
+      }
     } else {
       // Use regular items.dat already loaded in memory
       itemsContent = this.base.items.content;
