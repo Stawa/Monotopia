@@ -1,33 +1,14 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
-import { ROLE } from "@growserver/const";
+import { getRoleName, parseRole } from "@growserver/const";
 import { Database, players, type Players } from "@growserver/db";
 import { formatToDisplayName, parseUserTarget } from "@growserver/utils";
-
-const ROLE_BY_FLAG: Record<string, string> = {
-  "0": ROLE.BASIC,
-  basic: ROLE.BASIC,
-  user: ROLE.BASIC,
-  "1": ROLE.SUPPORTER,
-  supporter: ROLE.SUPPORTER,
-  support: ROLE.SUPPORTER,
-  "2": ROLE.DEVELOPER,
-  developer: ROLE.DEVELOPER,
-  dev: ROLE.DEVELOPER,
-  admin: ROLE.DEVELOPER,
-};
-
-const ROLE_LABEL: Record<string, string> = {
-  [ROLE.BASIC]: "Basic",
-  [ROLE.SUPPORTER]: "Supporter",
-  [ROLE.DEVELOPER]: "Developer",
-};
 
 const usage = () => {
   console.log("Usage: pnpm give:role <target> <role>");
   console.log("Target: /username or #userID");
-  console.log("Role: 0/basic, 1/supporter, 2/developer");
-  console.log("Example: pnpm give:role /admin 2");
+  console.log("Role: regular/user/2, supporter/3, mod/4, developer/1");
+  console.log("Example: pnpm give:role /admin developer");
 };
 
 const [targetArg, roleArg] = process.argv.slice(2);
@@ -44,7 +25,7 @@ if (!target) {
   process.exit(1);
 }
 
-const role = ROLE_BY_FLAG[roleArg.toLowerCase()];
+const role = parseRole(roleArg);
 if (!role) {
   console.error(`Invalid role: ${roleArg}`);
   usage();
@@ -81,9 +62,9 @@ const main = async () => {
     .where(eq(players.id, player.id));
 
   console.log(
-    `Updated ${player.name} (#${player.id}) from ${
-      ROLE_LABEL[player.role] ?? player.role
-    } to ${ROLE_LABEL[role]}.`,
+    `Updated ${player.name} (#${player.id}) from ${getRoleName(
+      player.role,
+    )} to ${getRoleName(role)}.`,
   );
 };
 

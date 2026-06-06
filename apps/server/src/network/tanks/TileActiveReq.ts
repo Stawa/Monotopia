@@ -1,9 +1,9 @@
-import { TankPacket, TextPacket, Variant } from "growtopia.js";
+import { TankPacket, Variant } from "growtopia.js";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { World } from "../../core/World";
 import { TileData } from "@growserver/types";
-import { PacketTypes } from "@growserver/const";
+import { LockPermission, TileFlags } from "@growserver/const";
 
 export class TileActiveReq {
   private pos: number;
@@ -27,92 +27,103 @@ export class TileActiveReq {
     if (!this.block || !this.block.door) return;
     if (this.block.fg === 6) return this.peer.leaveWorld();
 
-    const worldDes = this.block.door.destination?.split(":") as string[];
-    if (!worldDes[0]) worldDes[0] = this.peer.data.world;
+    if (!(await this.canUseDoor(this.block))) return;
 
-    const worldName = worldDes[0];
-    const id = worldDes[1];
+    const [rawWorldName, rawDoorID] = (
+      this.block.door.destination ?? ""
+    ).split(":");
+    const worldName = this.normalize(rawWorldName || this.peer.data.world);
+    const id = this.normalize(rawDoorID);
 
-    if (worldName === this.peer.data.world) {
-      let door = this.world.data.blocks.find((b) => b.door && b.door.id === id);
+    if (!worldName || worldName === "EXIT") return this.peer.leaveWorld();
 
-      if (!door) door = this.world.data.blocks.find((b) => b.fg === 6);
+    if (worldName === this.normalize(this.peer.data.world)) {
+      const door = this.findDoorByID(this.world, id) ?? this.findMainDoor(
+        this.world,
+      );
 
-      const doorX = (door?.x || 0) * 32;
-      const doorY = (door?.y || 0) * 32;
-
-      this.peer.data.x = doorX;
-      this.peer.data.y = doorY;
-
-      this.peer.send(Variant.from("OnZoomCamera", [10000], 1000));
-
-      const world = this.peer.currentWorld();
-      if (world) {
-        world.every((p) => {
-          p.send(
-            Variant.from(
-              { netID: this.peer.data?.netID },
-              "OnSetFreezeState",
-              0,
-            ),
-            Variant.from(
-              {
-                netID: this.peer.data?.netID,
-              },
-              "OnSetPos",
-              [doorX, doorY],
-            ),
-            Variant.from(
-              {
-                netID: this.peer.data?.netID,
-              },
-              "OnPlayPositioned",
-              "audio/door_open.wav",
-            ),
-          );
-        });
+      if (!door) {
+        this.peer.sendTextBubble("That destination door couldn't be found.", true);
+        return;
       }
-    } else {
-      if (worldName === "EXIT") return this.peer.leaveWorld();
-      const wrld = this.peer.currentWorld();
 
-      let door = wrld?.data.blocks?.find((b) => b.door && b.door.id === id);
-      if (!door) door = wrld?.data.blocks?.find((b) => b.fg === 6);
-
-      this.world.data.playerCount = this.world.data.playerCount
-        ? this.world.data.playerCount - 1
-        : 0;
-
-      const world = this.peer.currentWorld();
-      if (world) {
-        world.every((p) => {
-          if (p.data.netID !== this.peer.data.netID) {
-            p.send(
-              Variant.from(
-                "OnRemove",
-                `netID|${this.peer.data.netID}`,
-                `pId|${this.peer.data.userID}`,
-              ),
-              Variant.from(
-                "OnConsoleMessage",
-                `\`5<${this.peer.data.displayName}\`\` left, \`w${this.world.data.playerCount}\`\` others here\`5>\`\``,
-              ),
-              Variant.from(
-                "OnTalkBubble",
-                this.peer.data.netID,
-                `\`5<${this.peer.data.displayName}\`\` left, \`w${this.world.data.playerCount}\`\` others here\`5>\`\``,
-              ),
-              TextPacket.from(
-                PacketTypes.ACTION,
-                "action|play_sfx",
-                "file|audio/door_shut.wav",
-                "delayMS|0",
-              ),
-            );
-          }
-        });
-      }
-      this.peer.enterWorld(worldName, door?.x, door?.y);
+      this.setPeerPosition(this.world, door);
+      return;
     }
+
+    const destinationWorld = new World(this.base, worldName);
+    await destinationWorld.getData();
+
+    const door =
+      this.findDoorByID(destinationWorld, id) ??
+      this.findMainDoor(destinationWorld);
+
+    if (!door) {
+      this.peer.sendTextBubble("That destination world has no usable door.", true);
+      return;
+    }
+
+    this.world.leave(this.peer, false);
+    await this.peer.enterWorld(worldName, door.x, door.y);
+  }
+
+  private async canUseDoor(block: TileData): Promise<boolean> {
+    if (block.flags & TileFlags.PUBLIC) return true;
+
+    const canUse = await this.world.hasTilePermission(
+      this.peer.data.userID,
+      block,
+      LockPermission.BUILD,
+    );
+
+    if (!canUse) {
+      this.peer.sendTextBubble("This door is closed to the public.", true);
+      this.peer.sendOnPlayPositioned("audio/punch_locked.wav", {
+        netID: this.peer.data.netID,
+      });
+    }
+
+    return canUse;
+  }
+
+  private normalize(value?: string): string {
+    return (value ?? "").trim().toUpperCase();
+  }
+
+  private findDoorByID(world: World, id: string): TileData | undefined {
+    if (!id) return undefined;
+
+    return world.data.blocks.find(
+      (block) => block.door && this.normalize(block.door.id) === id,
+    );
+  }
+
+  private findMainDoor(world: World): TileData | undefined {
+    return world.data.blocks.find((block) => block.fg === 6);
+  }
+
+  private setPeerPosition(world: World, door: TileData): void {
+    const doorX = (door.x || 0) * 32;
+    const doorY = (door.y || 0) * 32;
+
+    this.peer.data.x = doorX;
+    this.peer.data.y = doorY;
+    this.peer.saveToCache();
+    this.peer.send(Variant.from("OnZoomCamera", [10000], 1000));
+
+    world.every((p) => {
+      p.send(
+        Variant.from({ netID: this.peer.data.netID }, "OnSetFreezeState", 0),
+        Variant.from({ netID: this.peer.data.netID }, "OnSetPos", [
+          doorX,
+          doorY,
+        ]),
+        Variant.from(
+          { netID: this.peer.data.netID },
+          "OnPlayPositioned",
+          "audio/door_open.wav",
+        ),
+      );
+    });
   }
 }

@@ -18,6 +18,24 @@ import {
 import { NormalTile } from "./tiles/NormalTile";
 import { ItemDefinition } from "grow-items";
 
+const WRENCHABLE_TILE_TYPES = new Set<number>([
+  ActionTypes.DOOR,
+  ActionTypes.LOCK,
+  ActionTypes.GATEWAY,
+  ActionTypes.SIGN,
+  ActionTypes.MAIN_DOOR,
+  ActionTypes.PORTAL,
+  ActionTypes.SWITCHEROO,
+  ActionTypes.DICE,
+  ActionTypes.DISPLAY_BLOCK,
+  ActionTypes.VENDING_MACHINE,
+  ActionTypes.VIP_ENTRANCE,
+  ActionTypes.RED_FACTION,
+  ActionTypes.GREEN_FACTION,
+  ActionTypes.BLUE_FACTION,
+  ActionTypes.FRIENDS_ENTRANCE,
+]);
+
 export class Tile {
   constructor(
     public base: Base,
@@ -450,12 +468,31 @@ export class Tile {
         this.data,
         LockPermission.BUILD,
       )) ||
-      !(itemMeta.flags! & BlockFlags.WRENCHABLE)
+      !this.isWrenchable(itemMeta)
     ) {
       return false;
     }
 
     return true;
+  }
+
+  private isWrenchable(itemMeta: ItemDefinition): boolean {
+    if (
+      this.data.door ||
+      this.data.sign ||
+      this.data.lock ||
+      this.data.worldLockData ||
+      this.data.entrace ||
+      this.data.displayBlock ||
+      this.data.vendingMachine ||
+      this.data.dice
+    ) {
+      return true;
+    }
+
+    if ((itemMeta.flags ?? 0) & BlockFlags.WRENCHABLE) return true;
+
+    return WRENCHABLE_TILE_TYPES.has(itemMeta.type ?? -1);
   }
 
   // TOOD: Implement.

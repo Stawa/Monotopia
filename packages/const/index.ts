@@ -22,7 +22,68 @@ export const ROLE = {
   DEVELOPER: "1",
   BASIC: "2",
   SUPPORTER: "3",
+  MODERATOR: "4",
 };
+
+export const ROLE_NAMES: Record<string, string> = {
+  [ROLE.BASIC]: "Regular User",
+  [ROLE.SUPPORTER]: "Supporter",
+  [ROLE.MODERATOR]: "Moderator",
+  [ROLE.DEVELOPER]: "Developer",
+};
+
+export const ROLE_LEVELS: Record<string, number> = {
+  [ROLE.BASIC]: 1,
+  [ROLE.SUPPORTER]: 2,
+  [ROLE.MODERATOR]: 3,
+  [ROLE.DEVELOPER]: 4,
+};
+
+export const ROLE_ALIASES: Record<string, string> = {
+  "0": ROLE.BASIC,
+  "1": ROLE.DEVELOPER,
+  "2": ROLE.BASIC,
+  "3": ROLE.SUPPORTER,
+  "4": ROLE.MODERATOR,
+  basic: ROLE.BASIC,
+  default: ROLE.BASIC,
+  player: ROLE.BASIC,
+  regular: ROLE.BASIC,
+  "regular-user": ROLE.BASIC,
+  regular_user: ROLE.BASIC,
+  user: ROLE.BASIC,
+  supporter: ROLE.SUPPORTER,
+  support: ROLE.SUPPORTER,
+  sup: ROLE.SUPPORTER,
+  mod: ROLE.MODERATOR,
+  mods: ROLE.MODERATOR,
+  moderator: ROLE.MODERATOR,
+  dev: ROLE.DEVELOPER,
+  developer: ROLE.DEVELOPER,
+  admin: ROLE.DEVELOPER,
+  owner: ROLE.DEVELOPER,
+};
+
+export function getRoleName(role: string): string {
+  return ROLE_NAMES[role] ?? role;
+}
+
+export function getRoleLevel(role: string): number {
+  return ROLE_LEVELS[role] ?? 0;
+}
+
+export function hasRolePermission(
+  userRole: string,
+  allowedRoles: string[],
+): boolean {
+  if (!allowedRoles.length) return true;
+  const userRoleLevel = getRoleLevel(userRole);
+  return allowedRoles.some((role) => userRoleLevel >= getRoleLevel(role));
+}
+
+export function parseRole(value: string): string | undefined {
+  return ROLE_ALIASES[value.trim().toLowerCase()];
+}
 
 export enum ClothTypes {
   HAIR = 0,

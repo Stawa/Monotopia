@@ -424,6 +424,7 @@ export class Peer extends OldPeer<PeerData> {
       default: {
         return this.data.country;
       }
+      case ROLE.MODERATOR:
       case ROLE.DEVELOPER: {
         return "rt";
       }

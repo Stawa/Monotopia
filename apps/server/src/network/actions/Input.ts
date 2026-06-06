@@ -4,6 +4,7 @@ import { Peer } from "../../core/Peer";
 import { CommandMap, CommandsAliasMap } from "../../command/cmds/index";
 import { Variant } from "growtopia.js";
 import logger from "@growserver/logger";
+import { getRoleName, hasRolePermission, ROLE } from "@growserver/const";
 
 export class Input {
   constructor(
@@ -64,11 +65,21 @@ export class Input {
         }
 
         // Check permissions first - if no permission, don't apply cooldown
-        if (!cmd.opt.permission.some((perm) => perm === this.peer.data?.role)) {
+        if (
+          !hasRolePermission(
+            this.peer.data?.role ?? ROLE.BASIC,
+            cmd.opt.permission ?? [],
+          )
+        ) {
+          const requiredRoles = (cmd.opt.permission ?? [])
+            .map((role) => getRoleName(role))
+            .join(", ");
           this.peer.send(
             Variant.from(
               "OnConsoleMessage",
-              "You dont have permission to use this command.",
+              `You dont have permission to use this command. Required: ${
+                requiredRoles || "None"
+              }.`,
             ),
           );
           return;

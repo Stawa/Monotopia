@@ -6,7 +6,7 @@ import { World } from "../../core/World";
 import { tileFrom } from "../../world/tiles";
 import { LockPermission, ROLE, TileFlags } from "@growserver/const";
 
-export class DoorEdit {
+export class GatewayEdit {
   private world: World;
   private pos: number;
   private block: TileData;
@@ -18,12 +18,8 @@ export class DoorEdit {
       dialog_name: string;
       tilex: string;
       tiley: string;
-      itemID: string;
-      label?: string;
-      target?: string;
-      destination?: string;
+      itemID?: string;
       checkbox_public?: string;
-      id?: string;
     }>,
   ) {
     this.world = this.peer.currentWorld()!;
@@ -38,11 +34,12 @@ export class DoorEdit {
       !this.action.dialog_name ||
       !this.action.tilex ||
       !this.action.tiley ||
-      !this.action.itemID ||
       Number.isNaN(this.pos) ||
       !this.block
-    )
+    ) {
       return;
+    }
+
     if (
       this.peer.data.role !== ROLE.DEVELOPER &&
       !(await this.world.hasTilePermission(
@@ -55,34 +52,27 @@ export class DoorEdit {
     }
 
     if (
-      !this.block.door ||
+      this.action.itemID !== undefined &&
       this.block.fg !== Number.parseInt(this.action.itemID, 10)
     ) {
       return;
     }
 
-    const label = (this.action.label ?? "").slice(0, 100);
-    const destination = (this.action.target ?? this.action.destination ?? "")
-      .trim()
-      .toUpperCase()
-      .slice(0, 24);
-    const id = (this.action.id ?? "").trim().toUpperCase().slice(0, 11);
+    const openToPublic = this.isChecked(this.action.checkbox_public);
 
     this.block.flags |= TileFlags.TILEEXTRA;
-    this.block.door = {
-      label,
-      destination,
-      id,
+    this.block.entrace = {
+      open: openToPublic,
     };
 
-    if (this.isChecked(this.action.checkbox_public)) {
+    if (openToPublic) {
       this.block.flags |= TileFlags.PUBLIC;
     } else {
-      this.block.flags &= ~TileFlags.PUBLIC; // unset PUBLIC flag
+      this.block.flags &= ~TileFlags.PUBLIC;
     }
 
-    const doorTile = tileFrom(this.base, this.world, this.block);
-    this.world.every((p) => doorTile.tileUpdate(p));
+    const gatewayTile = tileFrom(this.base, this.world, this.block);
+    this.world.every((p) => gatewayTile.tileUpdate(p));
     await this.world.saveToCache();
     await this.world.saveToDatabase();
   }

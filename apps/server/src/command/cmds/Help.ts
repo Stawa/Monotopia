@@ -1,7 +1,7 @@
 import { Command } from "../Command";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { ROLE } from "@growserver/const";
+import { getRoleName, hasRolePermission, ROLE } from "@growserver/const";
 import { Variant } from "growtopia.js";
 import { CommandMap } from ".";
 import { DialogBuilder } from "@growserver/utils";
@@ -19,15 +19,6 @@ export default class Help extends Command {
       example:     ["/help"],
       permission:  [ROLE.BASIC, ROLE.SUPPORTER, ROLE.DEVELOPER],
     };
-  }
-
-  private getRoleLevel(role: string): number {
-    const roleLevels = {
-      [ROLE.BASIC]:     1,
-      [ROLE.SUPPORTER]: 2,
-      [ROLE.DEVELOPER]: 3,
-    };
-    return roleLevels[role] || 0;
   }
 
   public async execute(): Promise<void> {
@@ -51,7 +42,11 @@ export default class Help extends Command {
         .addSmallText(`Cooldown: ${cmd?.opt.cooldown}`)
         .addSmallText(`Ratelimit: ${cmd?.opt.ratelimit}`)
         .addSmallText(
-          `Permissions: ${cmd?.opt.permission.length ? cmd.opt.permission : "None"}`,
+          `Permissions: ${
+            cmd?.opt.permission.length
+              ? cmd.opt.permission.map((role) => getRoleName(role)).join(", ")
+              : "None"
+          }`,
         )
         .addSmallText(`Usage: ${cmd?.opt.usage}`)
         .addSmallText(`Example: ${cmd?.opt.example.join(", ")}`)
@@ -59,8 +54,6 @@ export default class Help extends Command {
         .addQuickExit();
       return this.peer.send(Variant.from("OnDialogRequest", dialog.str()));
     }
-    const userRoleLevel = this.getRoleLevel(this.peer.data.role);
-
     // Filter and organize commands
     const commandsByCategory: Record<string, string[]> = {};
 
@@ -68,11 +61,7 @@ export default class Help extends Command {
       const cmd = new CommandClass(null, null, "", []);
 
       // Check if user has permission based on role hierarchy
-      const hasPermission = cmd.opt.permission.some(
-        (role) => this.getRoleLevel(role) <= userRoleLevel,
-      );
-
-      if (hasPermission) {
+      if (hasRolePermission(this.peer.data.role, cmd.opt.permission)) {
         const category = cmd.opt.category || "Uncategorized";
         if (!commandsByCategory[category]) {
           commandsByCategory[category] = [];

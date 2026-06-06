@@ -1,7 +1,5 @@
 import type { Class } from "type-fest";
 import { GazzetteEnd } from "./GazetteEnd";
-import { FindItem } from "./FindItem";
-import { FindItemEnd } from "./FindItemEnd";
 import { SearchItem } from "./SearchItem";
 import { AreaLockEdit } from "./AreaLockEdit";
 import { ConfirmClearWorld } from "./ConfirmClearWorld";
@@ -13,6 +11,8 @@ import { SwitcheROOEdit } from "./SwitcheROOEdit";
 import { RevokeLockAccess } from "./RevokeLockAccess";
 import { DisplayBlockEdit } from "./DisplayBlockEdit";
 import { DiceEdit } from "./DiceEdit";
+import { UseDoorTutorial } from "./UseDoorTutorial";
+import { GatewayEdit } from "./GatewayEdit";
 
 export const DialogMap: Record<
   string,
@@ -20,18 +20,18 @@ export const DialogMap: Record<
     execute: () => Promise<void>;
   }>
 > = {
-  ["gazzette_end"]:       GazzetteEnd,
-  ["find_item"]:          FindItem,
-  ["find_item_end"]:      FindItemEnd,
-  ["search_item"]:        SearchItem,
-  ["area_lock_edit"]:     AreaLockEdit,
-  ["confirm_clearworld"]: ConfirmClearWorld,
-  ["door_edit"]:          DoorEdit,
-  ["drop_end"]:           DropEnd,
-  ["sign_edit"]:          SignEdit,
-  ["trash_end"]:          TrashEnd,
-  ["switcheroo_edit"]:    SwitcheROOEdit,
-  ["revoke_lock_access"]: RevokeLockAccess,
-  ["displayblock_edit"]:  DisplayBlockEdit,
-  ["dice_edit"]:          DiceEdit,
+  ["gazzette_end"]:         GazzetteEnd,
+  ["search_item"]:          SearchItem,
+  ["area_lock_edit"]:       AreaLockEdit,
+  ["confirm_clearworld"]:   ConfirmClearWorld,
+  ["door_edit"]:            DoorEdit,
+  ["gateway_edit"]:         GatewayEdit,
+  ["drop_end"]:             DropEnd,
+  ["sign_edit"]:            SignEdit,
+  ["trash_end"]:            TrashEnd,
+  ["switcheroo_edit"]:      SwitcheROOEdit,
+  ["revoke_lock_access"]:   RevokeLockAccess,
+  ["displayblock_edit"]:    DisplayBlockEdit,
+  ["dice_edit"]:            DiceEdit,
+  ["on_use_door_tutorial"]: UseDoorTutorial,
 };

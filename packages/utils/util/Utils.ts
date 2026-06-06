@@ -350,10 +350,17 @@ export function formatToDisplayName(name: string, role: string): string {
     case ROLE.SUPPORTER: {
       return `\`e${name}\`\``;
     }
+    case ROLE.MODERATOR: {
+      return `\`5@${name}\`\``;
+    }
     case ROLE.DEVELOPER: {
-      return `\`b@${name}\`\``;
+      return `\`8@${name}\`\``;
     }
   }
+}
+
+export function stripDisplayName(name: string): string {
+  return name.replace(/`./g, "").replace(/`/g, "").replace(/^@/, "").trim();
 }
 
 export async function getLatestItemsDatName() {

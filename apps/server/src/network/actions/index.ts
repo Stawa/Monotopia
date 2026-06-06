@@ -14,6 +14,7 @@ import { Wrench } from "./Wrench";
 import { StoreBuy } from "./StoreBuy";
 import { StoreHandler } from "./StoreHandler";
 import { Info } from "./Info";
+import { OnFriend } from "./OnFriend";
 
 export const ActionMap: Record<
   string,
@@ -21,19 +22,24 @@ export const ActionMap: Record<
     execute: (action: NonEmptyObject<Record<string, string>>) => Promise<void>;
   }>
 > = {
-  ["refresh_item_data"]: RefreshItemData,
-  ["enter_game"]:        EnterGame,
-  ["quit_to_exit"]:      QuitToExit,
-  ["quit"]:              Quit,
-  ["join_request"]:      JoinRequest,
-  ["dialog_return"]:     DialogReturn,
-  ["input"]:             Input,
-  ["respawn"]:           Respawn,
-  ["respawn_spike"]:     RespawnSpike,
-  ["drop"]:              Drop,
-  ["trash"]:             Trash,
-  ["wrench"]:            Wrench,
-  ["buy"]:               StoreBuy,
-  ["store"]:             StoreHandler,
-  ["info"]:              Info,
+  ["refresh_item_data"]:    RefreshItemData,
+  ["enter_game"]:           EnterGame,
+  ["quit_to_exit"]:         QuitToExit,
+  ["on_quit_to_exit"]:      QuitToExit,
+  ["on_use_door_tutorial"]: QuitToExit,
+  ["quit"]:                 Quit,
+  ["join_request"]:         JoinRequest,
+  ["dialog_return"]:        DialogReturn,
+  ["input"]:                Input,
+  ["respawn"]:              Respawn,
+  ["respawn_spike"]:        RespawnSpike,
+  ["drop"]:                 Drop,
+  ["trash"]:                Trash,
+  ["wrench"]:               Wrench,
+  ["buy"]:                  StoreBuy,
+  ["store"]:                StoreHandler,
+  ["on-friend"]:            OnFriend,
+  ["friend"]:               OnFriend,
+  ["friends"]:              OnFriend,
+  ["info"]:                 Info,
 };
