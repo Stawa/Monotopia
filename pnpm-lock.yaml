@@ -237,8 +237,8 @@ importers:
   packages/config:
     dependencies:
       smol-toml:
-        specifier: ^1.4.2
-        version: 1.5.2
+        specifier: ^1.6.1
+        version: 1.6.1
     devDependencies:
       '@types/bun':
         specifier: ^1.2.21
@@ -1821,8 +1821,8 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
-  smol-toml@1.5.2:
-    resolution: {integrity: sha512-QlaZEqcAH3/RtNyet1IPIYPsEWAaYyXXv1Krsi+1L/QHppjX4Ifm8MQsBISz9vE8cHicIq3clogsheili5vhaQ==}
+  smol-toml@1.6.1:
+    resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
     engines: {node: '>= 18'}
 
   sonic-boom@4.2.0:
@@ -3218,7 +3218,7 @@ snapshots:
 
   shebang-regex@3.0.0: {}
 
-  smol-toml@1.5.2: {}
+  smol-toml@1.6.1: {}
 
   sonic-boom@4.2.0:
     dependencies:
