@@ -29,10 +29,6 @@ export default class Ghost extends Command {
     this.peer.data.state.canWalkInBlocks = this.peer.data.state.isGhost;
 
     if (this.peer.data.state.isGhost) {
-      // TODO: Allow unlimited jump and downwards movement
-
-      // Enable ghost mode: walk through blocks, double jump, and flying ability
-      this.peer.data.state.mod |= 1 | (1 << 1) | (1 << 23); // WALK_IN_BLOCKS | DOUBLE_JUMP | HAVE_FLYING_PINEAPPLE
       this.peer.send(
         Variant.from(
           "OnConsoleMessage",
@@ -70,8 +66,6 @@ export default class Ghost extends Command {
         });
       }
     } else {
-      // Disable ghost mode
-      this.peer.data.state.mod &= ~(1 | (1 << 1) | (1 << 23)); // Remove WALK_IN_BLOCKS | DOUBLE_JUMP | HAVE_FLYING_PINEAPPLE
       this.peer.send(
         Variant.from(
           "OnConsoleMessage",
@@ -83,6 +77,6 @@ export default class Ghost extends Command {
       this.peer.sendClothes();
     }
 
-    this.peer.sendState();
+    this.peer.formPlayMods();
   }
 }

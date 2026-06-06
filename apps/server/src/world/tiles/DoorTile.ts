@@ -1,6 +1,5 @@
 import { Variant } from "growtopia.js";
 import {
-  BlockFlags,
   LockPermission,
   TileExtraTypes,
   TileFlags,
@@ -85,7 +84,13 @@ export class DoorTile extends Tile {
   }
 
   public async onWrench(peer: Peer): Promise<boolean> {
-    if (!(await super.onWrench(peer))) {
+    if (
+      !(await this.world.hasTilePermission(
+        peer.data.userID,
+        this.data,
+        LockPermission.BUILD,
+      ))
+    ) {
       this.onPlaceFail(peer);
       return false;
     }

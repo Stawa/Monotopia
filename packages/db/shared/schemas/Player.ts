@@ -1,6 +1,13 @@
 import { InferSelectModel, sql } from "drizzle-orm";
-import { text, integer, pgTable, serial } from "drizzle-orm/pg-core";
+import {
+  text,
+  integer,
+  bigint as pgBigInt,
+  pgTable,
+  serial,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { DEFAULT_SKIN_COLOR } from "@growserver/const";
 
 export const players = pgTable("players", {
   id: serial("id").primaryKey(),
@@ -13,6 +20,9 @@ export const players = pgTable("players", {
   exp: integer("exp").default(0),
   clothing: text("clothing"),
   inventory: text("inventory"),
+  skin_color: pgBigInt("skin_color", { mode: "number" }).default(
+    DEFAULT_SKIN_COLOR,
+  ),
   last_visited_worlds: text("last_visited_worlds"),
   created_at: text("created_at").default(sql`(current_timestamp)`),
   updated_at: text("updated_at").default(sql`(current_timestamp)`),

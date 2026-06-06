@@ -9,8 +9,10 @@ import {
   ActionTypes,
   BlockFlags,
   BlockFlags2,
+  ITEM_DIGGERS_SPADE,
   ITEM_RAYMANS_FIST,
   LockPermission,
+  ModsEffects,
   ROLE,
   TankTypes,
   TileFlags,
@@ -18,23 +20,11 @@ import {
 import { NormalTile } from "./tiles/NormalTile";
 import { ItemDefinition } from "grow-items";
 
-const WRENCHABLE_TILE_TYPES = new Set<number>([
-  ActionTypes.DOOR,
-  ActionTypes.LOCK,
-  ActionTypes.GATEWAY,
-  ActionTypes.SIGN,
-  ActionTypes.MAIN_DOOR,
-  ActionTypes.PORTAL,
-  ActionTypes.SWITCHEROO,
-  ActionTypes.DICE,
-  ActionTypes.DISPLAY_BLOCK,
-  ActionTypes.VENDING_MACHINE,
-  ActionTypes.VIP_ENTRANCE,
-  ActionTypes.RED_FACTION,
-  ActionTypes.GREEN_FACTION,
-  ActionTypes.BLUE_FACTION,
-  ActionTypes.FRIENDS_ENTRANCE,
-]);
+const DEFAULT_PUNCH_DAMAGE = 6;
+const ENHANCED_PUNCH_DAMAGE = 12;
+const DIGGER_SPADE_SLOW_DAMAGE = 3;
+const ITEM_DIRT = 2;
+const ITEM_CAVE_BACKGROUND = 14;
 
 export class Tile {
   constructor(
@@ -53,6 +43,16 @@ export class Tile {
     peer: Peer,
     itemMeta: ItemDefinition,
   ): Promise<boolean> {
+    if (
+      itemMeta.type === ActionTypes.CLOTHES ||
+      itemMeta.type === ActionTypes.ANCES
+    ) {
+      peer.sendOnPlayPositioned("audio/cant_place_tile.wav", {
+        netID: peer.data?.netID,
+      });
+      return false;
+    }
+
     if (!peer.searchItem(itemMeta.id!)) return false;
     if (
       !(await this.world.hasTilePermission(
@@ -221,7 +221,7 @@ export class Tile {
     if (hasRaymansFist) {
       await this.handleRaymanPunch(peer);
     } else {
-      this.applyDamage(peer, 6);
+      await this.applyDamage(peer, this.getPunchDamage(peer, itemMeta));
 
       if (this.data.damage && this.data.damage >= itemMeta.breakHits!) {
         this.onDestroy(peer);
@@ -229,6 +229,25 @@ export class Tile {
     }
 
     return true;
+  }
+
+  private getPunchDamage(peer: Peer, itemMeta: ItemDefinition): number {
+    if (peer.data.clothing.hand === ITEM_DIGGERS_SPADE) {
+      if (itemMeta.id === ITEM_DIRT || itemMeta.id === ITEM_CAVE_BACKGROUND) {
+        return Math.max(
+          DEFAULT_PUNCH_DAMAGE,
+          (itemMeta.breakHits ?? 1) * DEFAULT_PUNCH_DAMAGE,
+        );
+      }
+
+      return DIGGER_SPADE_SLOW_DAMAGE;
+    }
+
+    if (peer.data.state.modsEffect & ModsEffects.PUNCH_DAMAGE) {
+      return ENHANCED_PUNCH_DAMAGE;
+    }
+
+    return DEFAULT_PUNCH_DAMAGE;
   }
 
   public async onPunchFail(peer: Peer): Promise<void> {
@@ -322,7 +341,7 @@ export class Tile {
         }
       }
 
-      await tile.applyDamage(peer, 6);
+      await tile.applyDamage(peer, tile.getPunchDamage(peer, itemMeta));
 
       // Check if tile should be destroyed
       if (targetTile.damage && targetTile.damage >= itemMeta.breakHits!) {
@@ -468,31 +487,12 @@ export class Tile {
         this.data,
         LockPermission.BUILD,
       )) ||
-      !this.isWrenchable(itemMeta)
+      !(itemMeta.flags! & BlockFlags.WRENCHABLE)
     ) {
       return false;
     }
 
     return true;
-  }
-
-  private isWrenchable(itemMeta: ItemDefinition): boolean {
-    if (
-      this.data.door ||
-      this.data.sign ||
-      this.data.lock ||
-      this.data.worldLockData ||
-      this.data.entrace ||
-      this.data.displayBlock ||
-      this.data.vendingMachine ||
-      this.data.dice
-    ) {
-      return true;
-    }
-
-    if ((itemMeta.flags ?? 0) & BlockFlags.WRENCHABLE) return true;
-
-    return WRENCHABLE_TILE_TYPES.has(itemMeta.type ?? -1);
   }
 
   // TOOD: Implement.

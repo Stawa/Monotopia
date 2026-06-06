@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import bcrypt from "bcryptjs";
 import { config } from "dotenv";
+import { DEFAULT_SKIN_COLOR } from "@growserver/const";
 
 config({
   path: "../../.env",
@@ -39,6 +40,7 @@ export async function setupSeeds() {
       exp INTEGER DEFAULT 0,
       clothing TEXT,
       inventory TEXT,
+      skin_color BIGINT DEFAULT ${DEFAULT_SKIN_COLOR},
       last_visited_worlds TEXT,
       created_at TEXT DEFAULT (current_timestamp),
       updated_at TEXT DEFAULT (current_timestamp),
@@ -54,6 +56,7 @@ export async function setupSeeds() {
         password: await hash("admin"),
         role: "1",
         gems: 1000,
+        skin_color: DEFAULT_SKIN_COLOR,
         clothing: null,
         inventory: null,
         last_visited_worlds: null,
@@ -66,6 +69,7 @@ export async function setupSeeds() {
         password: await hash("hakurei"),
         role: "2",
         gems: 1000,
+        skin_color: DEFAULT_SKIN_COLOR,
         clothing: null,
         inventory: null,
         last_visited_worlds: null,
@@ -78,6 +82,7 @@ export async function setupSeeds() {
         password: await hash("admin"),
         role: "1",
         gems: 1000,
+        skin_color: DEFAULT_SKIN_COLOR,
         clothing: null,
         inventory: null,
         last_visited_worlds: null,

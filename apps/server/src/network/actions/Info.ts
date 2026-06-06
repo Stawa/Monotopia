@@ -1,67 +1,60 @@
+import logger from "@growserver/logger";
+import { DialogBuilder } from "@growserver/utils";
+import { Variant } from "growtopia.js";
 import { type NonEmptyObject } from "type-fest";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { DialogBuilder } from "@growserver/utils";
-import { Variant } from "growtopia.js";
-import { ItemsInfo } from "@growserver/types";
+import { getItemDetails, hasItemDetails } from "../../items/ItemDetails";
 
 export class Info {
-  private readonly items = new Map<number, ItemsInfo>();
-
   constructor(
     public base: Base,
     public peer: Peer,
-  ) {
-    // Use the already loaded items from Base
-    if (base.items.wiki && Array.isArray(base.items.wiki)) {
-      base.items.wiki.forEach((it) => {
-        this.items.set(it.id, it);
-      });
-    } else {
-      console.error("Items wiki data not loaded properly in Base class");
-    }
-  }
+  ) {}
 
   public async execute(
     action: NonEmptyObject<Record<string, string>>,
   ): Promise<void> {
-    const id = parseInt(action.itemID, 10);
-    if (isNaN(id)) return this.sendMessage("Invalid item ID.");
-    const item = this.items.get(id);
-    if (!item) return this.sendMessage("Item not found.");
+    const id = Number.parseInt(action.itemID, 10);
+    if (!Number.isFinite(id)) return this.sendMessage("Invalid item ID.");
+    if (!hasItemDetails(this.base, id)) return this.sendMessage("Item not found.");
+
+    const details = getItemDetails(this.base, id);
 
     const dlg = new DialogBuilder()
       .defaultColor()
-      .addLabelWithIcon(`\`wAbout ${item.name} (${item.id})`, item.id, "small")
+      .addLabelWithIcon(`\`wAbout ${details.name} (${details.id})\`\``, id, "big")
       .addSpacer("small")
-      .addSmallText(item.desc || "`oNo description available.")
+      .addTextBox(details.description)
       .addSpacer("small")
-      .addSmallText("Rarity: `wTODO");
+      .addLabelWithIcon("`wDetails``", id, "small")
+      .addSmallText(`Rarity: \`w${details.rarity}\`\``)
+      .addSmallText(`Type: \`w${details.type}\`\``)
+      .addSmallText(`Max stack: \`w${details.maxAmount}\`\``)
+      .addSmallText(`Flags: \`w${details.flags}\`\``);
 
-    if (item.recipe?.splice?.length) {
-      const seeds = item.recipe.splice
-        .map((sid) => this.items.get(sid)?.name || sid)
-        .join(" + ");
-      dlg.addSmallText(`Recipe: ${seeds} = ${item.name}`).addSpacer("small");
+    if (details.playMods.length) {
+      dlg.addSmallText(`Effects: \`w${details.playMods.join(", ")}\`\``);
     }
 
-    // Check if item has combine property via metadata instead
-    const itemMeta = this.base.items.metadata.items.get(item.id.toString());
-    const hasTransmutation = itemMeta && itemMeta.actionType === 34; // ActionType 34 is commonly used for transmutable items
+    if (details.growTime > 0) {
+      dlg.addSmallText(`Grow time: \`w${details.growTime} seconds\`\``);
+    }
 
-    if (hasTransmutation) {
-      dlg.addSmallText("`oThis item can be transmuted.");
-    } else if (!item.recipe?.splice?.length) {
+    if (details.breakHits > 0) {
+      dlg.addSmallText(`Break hits: \`w${details.breakHits}\`\``);
+    }
+
+    if (details.recipe) {
+      dlg
+        .addSpacer("small")
+        .addLabelWithIcon("`wRecipe``", id, "small")
+        .addSmallText(`Splice: \`w${details.recipe}\`\``);
+    } else {
       dlg.addSmallText("`oThis item cannot be spliced.");
     }
 
-    // Check if item is permanent via metadata instead
-    const isPermaItem =
-      itemMeta &&
-      itemMeta.flags !== undefined &&
-      (itemMeta.flags & 0x100) === 0x100; // Check for ITEM_UNTRADEABLE flag which often indicates perma items
-
-    if (isPermaItem) {
+    if (details.permanent) {
       dlg
         .addSpacer("small")
         .addSmallText(
@@ -69,9 +62,12 @@ export class Info {
         );
     }
 
-    const out = dlg.addButton("info_end", "OK").str();
-    this.peer.send(Variant.from("OnDialogRequest", out));
+    this.peer.send(
+      Variant.from("OnDialogRequest", dlg.endDialog("info_end", "Close", "OK").str()),
+    );
+    logger.debug?.(`Sent item info for ${details.name} (${details.id})`);
   }
+
   private sendMessage(msg: string) {
     this.peer.send(Variant.from("OnTextOverlay", msg));
   }

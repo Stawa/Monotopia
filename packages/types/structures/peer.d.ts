@@ -14,6 +14,7 @@ export interface PeerData {
   role: string;
   gems: number;
   clothing: Clothing;
+  skinColor?: number;
   exp: number;
   level: number;
   lastCheckpoint?: CheckPoint;

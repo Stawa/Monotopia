@@ -7,11 +7,14 @@ import {
   ActionTypes,
   BlockFlags,
   LOCKS,
+  LockPermission,
   ROLE,
   TankTypes,
+  TileFlags,
 } from "@growserver/const";
 import { ItemDefinition } from "grow-items";
 import { tileFrom } from "../../world/tiles";
+import { DialogBuilder } from "@growserver/utils";
 
 export class TileChangeReq {
   private pos: number;
@@ -49,17 +52,26 @@ export class TileChangeReq {
       this.world.data.blocks[
         this.tank.data.xPunch + this.tank.data.yPunch * this.world.data.width
       ];
+    const tileItemMeta = this.base.items.metadata.items.get(
+      (tileData.fg || tileData.bg).toString(),
+    );
+    const activeItemID = this.tank.data.info;
 
     // Fist
-    if (this.tank.data?.info === 18) {
+    if (activeItemID === 18) {
       await tileFrom(this.base, this.world, tileData).onPunch(this.peer);
-    } else if (this.tank.data?.info === 32) {
+    } else if (activeItemID === 32) {
+      if (this.isEntrance(tileData, tileItemMeta)) {
+        await this.sendEntranceWrench(tileData, tileItemMeta);
+        return;
+      }
+
       await tileFrom(this.base, this.world, tileData).onWrench(this.peer);
     }
     // Others
     else {
       const itemMeta = this.base.items.metadata.items.get(
-        this.tank.data?.info.toString(),
+        activeItemID.toString(),
       );
 
       if (!itemMeta) return;
@@ -88,6 +100,65 @@ export class TileChangeReq {
     }
     await this.world.saveToCache();
     await this.world.saveToDatabase();
+  }
+
+  private isEntrance(
+    tileData: TileData,
+    itemMeta?: ItemDefinition,
+  ): boolean {
+    const type = itemMeta?.type;
+
+    return (
+      tileData.entrace !== undefined ||
+      type === ActionTypes.GATEWAY ||
+      type === ActionTypes.VIP_ENTRANCE ||
+      type === ActionTypes.RED_FACTION ||
+      type === ActionTypes.GREEN_FACTION ||
+      type === ActionTypes.BLUE_FACTION ||
+      type === ActionTypes.FRIENDS_ENTRANCE
+    );
+  }
+
+  private async sendEntranceWrench(
+    tileData: TileData,
+    itemMeta?: ItemDefinition,
+  ): Promise<void> {
+    if (
+      !(await this.world.hasTilePermission(
+        this.peer.data.userID,
+        tileData,
+        LockPermission.BUILD,
+      ))
+    ) {
+      this.peer.sendOnPlayPositioned("audio/punch_locked.wav", {
+        netID: this.peer.data.netID,
+      });
+      return;
+    }
+
+    tileData.entrace = undefined;
+    tileData.flags &= ~(TileFlags.TILEEXTRA | TileFlags.OPEN);
+
+    const item = itemMeta ?? this.base.items.metadata.items.get(
+      tileData.fg.toString(),
+    );
+    if (!item) return;
+
+    const dialog = new DialogBuilder()
+      .defaultColor()
+      .addLabelWithIcon(`\`wEdit ${item.name}\`\``, item.id as number, "big")
+      .addCheckbox(
+        "checkbox_public",
+        "Open to public",
+        tileData.flags & TileFlags.PUBLIC ? "selected" : "not_selected",
+      )
+      .embed("tilex", tileData.x)
+      .embed("tiley", tileData.y)
+      .embed("itemID", item.id)
+      .endDialog("gateway_edit", "Cancel", "OK")
+      .str();
+
+    this.peer.send(Variant.from("OnDialogRequest", dialog));
   }
 
   // private async onTileWrench() {

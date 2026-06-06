@@ -36,7 +36,7 @@ export class State {
     const world = this.peer.currentWorld();
     if (world) {
       world.every((p) => {
-        p.send(this.tank);
+        if (p.data.netID !== this.peer.data.netID) p.send(this.tank);
       });
     }
 

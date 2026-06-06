@@ -32,6 +32,7 @@ import { ActionTypes, BlockFlags, ITEMS_DAT_NAME } from "@growserver/const";
 import { ItemsDat, ItemsDatMeta, type ItemDefinition } from "grow-items";
 import { config as configServer } from "@growserver/config";
 import logger from "@growserver/logger";
+import { decodeItemsDatCompat } from "../items/ItemsDatCompat";
 
 __dirname = process.cwd();
 
@@ -450,7 +451,7 @@ export class Base {
     );
     const rawItemsDat = await readFile(itemsDatPath);
     const itemsDat = new ItemsDat(Array.from(rawItemsDat));
-    await itemsDat.decode();
+    await decodeItemsDatCompat(itemsDat);
     // logger.info("Loading custom items...");
 
     // Disable temporarily (TODO: remaking this later)

@@ -15,32 +15,25 @@ import { WeatherTile } from "./WeatherTile";
 import { DiceTile } from "./DiceTile";
 import { SeedTile } from "./SeedTile";
 import { VendingMachineTile } from "./VendingMachineTile";
-import { GatewayTile } from "./GatewayTile";
 import { ExtendBuffer } from "@growserver/utils";
 import { TankPacket } from "growtopia.js";
 import logger from "@growserver/logger";
 
 const TileMap: Record<number, Class<Tile>> = {
-  [ActionTypes.DOOR]:             DoorTile,
-  [ActionTypes.MAIN_DOOR]:        DoorTile,
-  [ActionTypes.PORTAL]:           DoorTile,
-  [ActionTypes.GATEWAY]:          GatewayTile,
-  [ActionTypes.VIP_ENTRANCE]:     GatewayTile,
-  [ActionTypes.RED_FACTION]:      GatewayTile,
-  [ActionTypes.GREEN_FACTION]:    GatewayTile,
-  [ActionTypes.BLUE_FACTION]:     GatewayTile,
-  [ActionTypes.FRIENDS_ENTRANCE]: GatewayTile,
-  [ActionTypes.SIGN]:             SignTile,
-  [ActionTypes.LOCK]:             LockTile,
-  [ActionTypes.HEART_MONITOR]:    HeartMonitorTile,
-  [ActionTypes.DISPLAY_BLOCK]:    DisplayBlockTile,
-  [ActionTypes.SWITCHEROO]:       SwitcheROO,
-  [ActionTypes.WEATHER_MACHINE]:  WeatherTile,
-  [ActionTypes.DICE]:             DiceTile,
-  [ActionTypes.VENDING_MACHINE]:  VendingMachineTile,
-  [ActionTypes.BACKGROUND]:       NormalTile,
-  [ActionTypes.FOREGROUND]:       NormalTile,
-  [ActionTypes.SEED]:             SeedTile,
+  [ActionTypes.DOOR]:            DoorTile,
+  [ActionTypes.MAIN_DOOR]:       DoorTile,
+  [ActionTypes.PORTAL]:          DoorTile,
+  [ActionTypes.SIGN]:            SignTile,
+  [ActionTypes.LOCK]:            LockTile,
+  [ActionTypes.HEART_MONITOR]:   HeartMonitorTile,
+  [ActionTypes.DISPLAY_BLOCK]:   DisplayBlockTile,
+  [ActionTypes.SWITCHEROO]:      SwitcheROO,
+  [ActionTypes.WEATHER_MACHINE]: WeatherTile,
+  [ActionTypes.DICE]:            DiceTile,
+  [ActionTypes.VENDING_MACHINE]: VendingMachineTile,
+  [ActionTypes.BACKGROUND]:      NormalTile,
+  [ActionTypes.FOREGROUND]:      NormalTile,
+  [ActionTypes.SEED]:            SeedTile,
 };
 
 const CoreItemTypeFallback: Record<number, ActionTypes> = {
@@ -61,10 +54,6 @@ const getTileType = (
   if (data.door) {
     if (data.fg === 6) return ActionTypes.MAIN_DOOR;
     return ActionTypes.DOOR;
-  }
-  if (data.entrace) {
-    const item = base.items.metadata.items.get(data.fg.toString());
-    return (item?.type as ActionTypes | undefined) ?? ActionTypes.GATEWAY;
   }
   if (data.sign) return ActionTypes.SIGN;
   if (data.lock || data.worldLockData) return ActionTypes.LOCK;

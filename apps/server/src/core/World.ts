@@ -358,7 +358,7 @@ ${peer.data.lastVisitedWorlds
           peer.data.clothing.mask,
           peer.data.clothing.necklace,
         ],
-        0x8295c3ff,
+        peer.getSkinColor(),
         [peer.data.clothing.ances, 0.0, 0.0],
       ),
     );
@@ -404,7 +404,7 @@ ${peer.data.lastVisitedWorlds
                 peer.data.clothing.mask,
                 peer.data.clothing.necklace,
               ],
-              0x8295c3ff,
+              peer.getSkinColor(),
               [peer.data.clothing.ances, 0.0, 0.0],
             ),
             Variant.from(
@@ -452,7 +452,7 @@ ${peer.data.lastVisitedWorlds
                 p.data.clothing.mask,
                 p.data.clothing.necklace,
               ],
-              0x8295c3ff,
+              p.getSkinColor(),
               [p.data.clothing.ances, 0.0, 0.0],
             ),
           );

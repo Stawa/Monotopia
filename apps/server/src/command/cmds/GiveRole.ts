@@ -128,7 +128,12 @@ export default class GiveRole extends Command {
 
     if (targetPeer) {
       targetPeer.data.role = newRole;
-      await targetPeer.updateDisplayName();
+      const targetName =
+        stripDisplayName(targetPeer.data.displayName ?? targetPeer.data.name) ||
+        targetPeer.data.name;
+      await targetPeer.updateDisplayName(
+        formatToDisplayName(targetName, newRole),
+      );
 
       const currentWorld = targetPeer.currentWorld();
       if (currentWorld) {
@@ -163,11 +168,15 @@ export default class GiveRole extends Command {
         ),
       );
     } else if (targetData) {
+      const targetName =
+        stripDisplayName(targetData.display_name ?? targetData.name) ||
+        targetData.name;
+
       await this.base.database.db
         .update(players)
         .set({
           role:         newRole,
-          display_name: formatToDisplayName(targetData.name, newRole),
+          display_name: formatToDisplayName(targetName, newRole),
         })
         .where(eq(players.id, targetData.id));
 

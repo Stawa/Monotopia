@@ -3,11 +3,13 @@ import { Base } from "../core/Base";
 import { Peer } from "../core/Peer";
 import {
   consumeWebLoginToken,
+  formatToDisplayName,
   parseAction,
   getCurrentTimeInSeconds,
   RTTEX,
+  stripDisplayName,
 } from "@growserver/utils";
-import { PacketTypes } from "@growserver/const";
+import { DEFAULT_SKIN_COLOR, PacketTypes } from "@growserver/const";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { type JsonObject } from "type-fest";
@@ -47,6 +49,41 @@ export class ITextPacket {
 
   private sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private getVisibleGrowID(
+    player: { name: string; display_name: string },
+    growId: string,
+  ): string {
+    const typedGrowId = growId.trim();
+    const storedDisplayName = stripDisplayName(player.display_name ?? "");
+
+    if (typedGrowId.toLowerCase() === player.name) return typedGrowId;
+    if (storedDisplayName) return storedDisplayName;
+
+    return player.name;
+  }
+
+  private getLoginDisplayName(
+    player: { name: string; display_name: string; role: string },
+    growId: string,
+  ): string {
+    const visibleGrowID = this.getVisibleGrowID(player, growId);
+    const storedDisplayName = player.display_name ?? "";
+    const plainStoredDisplayName = stripDisplayName(storedDisplayName);
+
+    if (
+      storedDisplayName &&
+      plainStoredDisplayName.toLowerCase() !== player.name
+    ) {
+      return storedDisplayName;
+    }
+
+    if (storedDisplayName.includes("`") || storedDisplayName.startsWith("@")) {
+      return formatToDisplayName(visibleGrowID, player.role);
+    }
+
+    return visibleGrowID;
   }
 
   private async waitForWebLoginToken() {
@@ -212,8 +249,9 @@ export class ITextPacket {
       const conf = this.base.config.web;
       const ports = conf.ports as number[];
       const randPort = ports[Math.floor(Math.random() * ports.length)];
+      const visibleGrowID = this.getVisibleGrowID(player, growId);
       this.peer.send(
-        Variant.from("SetHasGrowID", 1, player.name, password),
+        Variant.from("SetHasGrowID", 1, visibleGrowID, password),
         Variant.from(
           "OnSendToServer",
           randPort,
@@ -221,7 +259,7 @@ export class ITextPacket {
           player.id,
           `${conf.address}|0|${customAlphabet("0123456789ABCDEF", 32)()}`,
           1,
-          player.name,
+          visibleGrowID,
         ),
       );
     } catch (e) {
@@ -283,7 +321,8 @@ export class ITextPacket {
     }
 
     this.sendSuperMain();
-    this.peer.send(Variant.from("SetHasGrowID", 1, player.name, password));
+    const visibleGrowID = this.getVisibleGrowID(player, growId);
+    this.peer.send(Variant.from("SetHasGrowID", 1, visibleGrowID, password));
 
     const defaultInventory = {
       max:   32,
@@ -313,7 +352,7 @@ export class ITextPacket {
     };
 
     this.peer.data.name = player.name;
-    this.peer.data.displayName = player.display_name;
+    this.peer.data.displayName = this.getLoginDisplayName(player, growId);
     this.peer.data.rotatedLeft = false;
     this.peer.data.country = this.obj.country as string;
     this.peer.data.platformID = this.obj.platformID as string;
@@ -325,6 +364,7 @@ export class ITextPacket {
     this.peer.data.clothing = player.clothing?.length
       ? JSON.parse(player.clothing.toString())
       : defaultClothing;
+    this.peer.data.skinColor = Number(player.skin_color ?? DEFAULT_SKIN_COLOR);
     this.peer.data.gems = player.gems ? player.gems : 0;
     this.peer.data.world = "EXIT";
     this.peer.data.level = player.level ? player.level : 0;

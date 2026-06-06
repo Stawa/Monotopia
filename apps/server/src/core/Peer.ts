@@ -15,6 +15,7 @@ import {
   CharacterState,
   CLOTH_MAP,
   ClothTypes,
+  DEFAULT_SKIN_COLOR,
   ModsEffects,
   NameStyles,
   PacketTypes,
@@ -27,6 +28,11 @@ import {
   manageArray,
 } from "@growserver/utils";
 import { tileFrom, tileUpdateMultiple } from "../world/tiles";
+import {
+  getItemEffectText,
+  inferItemEffects,
+  itemHasPunchDamageEffect,
+} from "../items/ItemDetails";
 
 const PUNCH_ITEMS: Array<{
   id: number;
@@ -201,6 +207,8 @@ const PUNCH_ITEMS: Array<{
   { id: 4464, punchID: 73, slot: "hand" }, //AK-8087
   { id: 4778, punchID: 76, slot: "hand" }, //Adventurer's Whip
   { id: 6026, punchID: 76, slot: "hand" }, //Whip of Truth
+  { id: 12172, punchID: 76, slot: "hand" }, //Ethereal Chains
+  { id: 14796, punchID: 76, slot: "hand" }, //Scarecrow's Chains
   { id: 4996, punchID: 77, slot: "hand" }, //Burning Hands
   { id: 3680, punchID: 77, slot: "hand" }, //Phlogiston
   { id: 4840, punchID: 78, slot: "hand" }, //Balloon Launcher
@@ -401,6 +409,7 @@ export class Peer extends OldPeer<PeerData> {
         role:              data.role,
         gems:              data.gems,
         clothing:          data.clothing,
+        skinColor:         data.skinColor,
         exp:               data.exp,
         level:             data.level,
         lastCheckpoint:    data.lastCheckpoint,
@@ -736,7 +745,7 @@ export class Peer extends OldPeer<PeerData> {
               this.data.clothing.mask,
               this.data.clothing.necklace,
             ],
-            0x8295c3ff,
+            this.getSkinColor(),
             [this.data.clothing.ances, 0.0, 0.0],
           ),
         );
@@ -744,28 +753,121 @@ export class Peer extends OldPeer<PeerData> {
     }
   }
 
+  public getSkinColor() {
+    const color = Number(this.data.skinColor ?? DEFAULT_SKIN_COLOR);
+    return Number.isFinite(color) ? color >>> 0 : DEFAULT_SKIN_COLOR;
+  }
+
+  public setSkin(color: number) {
+    this.data.skinColor = color >>> 0;
+    this.sendClothes();
+    this.saveToCache();
+    void this.saveToDatabase();
+  }
+
+  private getClothingModText(
+    item: ItemDefinition | undefined,
+    itemInfo: { name?: string; desc?: string; playMods?: string[] } | undefined,
+  ): string {
+    return getItemEffectText(item, itemInfo);
+  }
+
+  private hasDoubleJumpMod(
+    slot: keyof PeerData["clothing"],
+    item: ItemDefinition | undefined,
+    modText: string,
+  ): boolean {
+    if (modText.includes("double jump")) return true;
+
+    const itemName = (item?.name ?? "").toLowerCase();
+    if (slot === "back") {
+      return /wing|cape|jetpack|glider|parasol|balloon|hover|float/.test(
+        itemName,
+      );
+    }
+
+    if (slot === "feet") {
+      return /glider|hover|bike|car|wagon|raptor|mount/.test(itemName);
+    }
+
+    return false;
+  }
+
+  private hasSpeedyMod(
+    slot: keyof PeerData["clothing"],
+    item: ItemDefinition | undefined,
+    modText: string,
+  ): boolean {
+    if (
+      /speedy|speed boost|move faster|run faster|high speeds|agility/.test(
+        modText,
+      )
+    ) {
+      return true;
+    }
+
+    const itemName = (item?.name ?? "").toLowerCase();
+    return (
+      slot === "feet" &&
+      /boot|shoe|sneaker|roller|skate|board|bike|car|wagon|raptor|mount/.test(
+        itemName,
+      )
+    );
+  }
+
   // Check every clothes playmods & apply it
   public formPlayMods() {
-    let charActive = 0;
-    const modActive = 0;
+    let charActive = this.data.state.isGhost
+      ? CharacterState.WALK_IN_BLOCKS |
+        CharacterState.DOUBLE_JUMP |
+        CharacterState.HAVE_FLYING_PINEAPPLE
+      : 0;
+    let modActive = 0;
 
-    Object.keys(this.data.clothing).forEach((k) => {
-      const itemInfo = this.base.items.wiki.find(
-        (i) => i.id === this.data.clothing[k],
+    Object.entries(this.data.clothing).forEach(([slot, itemID]) => {
+      if (!itemID) return;
+
+      const item = this.base.items.metadata.items.get(itemID.toString());
+      const itemInfo = this.base.items.wiki.find((i) => i.id === itemID);
+      const modText = this.getClothingModText(item, itemInfo);
+      const effects = new Set(
+        inferItemEffects(item, itemInfo).map((effect) => effect.toLowerCase()),
       );
-      const playMods = itemInfo?.playMods || [];
+      const clothingSlot = slot as keyof PeerData["clothing"];
 
-      for (const mod of playMods) {
-        const name = mod.toLowerCase();
-        if (name.includes("double jump"))
-          charActive |= CharacterState.DOUBLE_JUMP;
+      if (
+        effects.has("double jump") ||
+        this.hasDoubleJumpMod(clothingSlot, item, modText)
+      ) {
+        charActive |= CharacterState.DOUBLE_JUMP;
+      }
+      if (
+        effects.has("speedy") ||
+        this.hasSpeedyMod(clothingSlot, item, modText)
+      ) {
+        modActive |= ModsEffects.SPEEDY;
+      }
+      if (effects.has("high jump")) {
+        modActive |= ModsEffects.HIGH_JUMP;
+      }
+      if (effects.has("slow fall")) {
+        modActive |= ModsEffects.SLOW_FALL;
+      }
+      if (
+        effects.has("punch damage") ||
+        itemHasPunchDamageEffect(item, itemInfo)
+      ) {
+        modActive |= ModsEffects.PUNCH_DAMAGE;
+      }
+      if (effects.has("harvester") || modText.includes("harvester")) {
+        modActive |= ModsEffects.HARVESTER;
       }
     });
 
     this.data.state.mod = charActive;
     this.data.state.modsEffect = modActive;
 
-    this.sendState();
+    this.sendState(undefined, true, true);
   }
 
   public equipClothes(itemID: number) {
@@ -872,20 +974,27 @@ export class Peer extends OldPeer<PeerData> {
     }
   }
 
-  public sendState(punchID?: number, everyPeer = true) {
+  public sendState(punchID?: number, everyPeer = true, sendSelf = true) {
     // Use punchID if provided, otherwise use getPunchID()
     const punch = punchID !== undefined ? punchID : this.getPunchID();
+    const hasSpeedy = Boolean(this.data.state.modsEffect & ModsEffects.SPEEDY);
+    const hasHighJump = Boolean(
+      this.data.state.modsEffect & ModsEffects.HIGH_JUMP,
+    );
+    const hasSlowFall = Boolean(
+      this.data.state.modsEffect & ModsEffects.SLOW_FALL,
+    );
     const tank = TankPacket.from({
       type:   TankTypes.SET_CHARACTER_STATE,
       netID:  this.data.netID,
       info:   this.data.state.mod,
-      xPos:   1200,
-      yPos:   200,
-      xSpeed: 300,
-      ySpeed: 600,
+      xPos:   this.data.x ?? 0,
+      yPos:   this.data.y ?? 0,
+      xSpeed: hasSpeedy ? 390 : 300,
+      ySpeed: hasSlowFall ? 420 : hasHighJump ? 720 : 600,
       xPunch: 0,
       yPunch: 0,
-      state:  0,
+      state:  this.data.rotatedLeft ? 16 : 0,
     }).parse() as Buffer;
 
     tank.writeUint8(punch, 5);
@@ -893,7 +1002,7 @@ export class Peer extends OldPeer<PeerData> {
     tank.writeUint8(0x80, 7);
     tank.writeFloatLE(125.0, 20);
 
-    this.send(tank);
+    if (sendSelf) this.send(tank);
     if (everyPeer) {
       const world = this.currentWorld();
       if (world) {
@@ -1055,7 +1164,7 @@ export class Peer extends OldPeer<PeerData> {
    */
   public setGems(amount: number, skip_animation: number = 0) {
     this.send(
-      Variant.from("OnSetBux", amount, skip_animation, 0, [
+      Variant.from("OnSetBux", amount, skip_animation, 1, [
         getCurrentTimeInSeconds(),
         0.0,
         0.0,

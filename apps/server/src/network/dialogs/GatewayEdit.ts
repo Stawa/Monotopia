@@ -60,10 +60,8 @@ export class GatewayEdit {
 
     const openToPublic = this.isChecked(this.action.checkbox_public);
 
-    this.block.flags |= TileFlags.TILEEXTRA;
-    this.block.entrace = {
-      open: openToPublic,
-    };
+    this.block.entrace = undefined;
+    this.block.flags &= ~(TileFlags.TILEEXTRA | TileFlags.OPEN);
 
     if (openToPublic) {
       this.block.flags |= TileFlags.PUBLIC;

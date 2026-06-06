@@ -14,6 +14,7 @@ export const WORLD_SIZE = {
 };
 
 export const STRING_CIPHER_KEY = "PBG892FXX982ABC*";
+export const DEFAULT_SKIN_COLOR = 0x8295c3ff;
 export const Y_START_DIRT = 24;
 export const Y_LAVA_START = 50;
 export const Y_END_DIRT = 55;
@@ -547,6 +548,9 @@ export enum CharacterState {
 export enum ModsEffects {
   HARVESTER = 1 << 0,
   PUNCH_DAMAGE = 1 << 1,
+  SPEEDY = 1 << 2,
+  HIGH_JUMP = 1 << 3,
+  SLOW_FALL = 1 << 4,
 }
 
 export enum StateFlags {
@@ -574,4 +578,5 @@ export enum StateFlags {
 }
 
 // Item IDs
+export const ITEM_DIGGERS_SPADE = 2952; // Digger's Spade hand item
 export const ITEM_RAYMANS_FIST = 5480; // Rayman's Fist hand item

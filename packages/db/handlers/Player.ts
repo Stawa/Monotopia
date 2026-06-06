@@ -1,18 +1,38 @@
 import { type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { eq, sql, like } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { players } from "../shared/schemas/Player";
 import bcrypt from "bcryptjs";
-import { ROLE } from "@growserver/const";
+import { DEFAULT_SKIN_COLOR, ROLE } from "@growserver/const";
 import { PeerData } from "@growserver/types";
 
 export class PlayerDB {
+  private static schemaReady: Promise<void> | undefined;
+
   constructor(private db: PostgresJsDatabase<Record<string, never>>) {}
 
+  private async ensureSchema() {
+    PlayerDB.schemaReady ??= this.db
+      .execute(
+        sql.raw(
+          `ALTER TABLE players ADD COLUMN IF NOT EXISTS skin_color BIGINT DEFAULT ${DEFAULT_SKIN_COLOR}`,
+        ),
+      )
+      .then(() => undefined)
+      .catch((error) => {
+        PlayerDB.schemaReady = undefined;
+        throw error;
+      });
+
+    await PlayerDB.schemaReady;
+  }
+
   public async get(name: string) {
+    await this.ensureSchema();
+
     const res = await this.db
       .select()
       .from(players)
-      .where(like(players.name, name))
+      .where(eq(players.name, name.toLowerCase()))
       .limit(1)
       .execute();
 
@@ -21,6 +41,8 @@ export class PlayerDB {
   }
 
   public async getByUID(userID: number) {
+    await this.ensureSchema();
+
     const res = await this.db
       .select()
       .from(players)
@@ -33,10 +55,12 @@ export class PlayerDB {
   }
 
   public async has(name: string) {
+    await this.ensureSchema();
+
     const res = await this.db
       .select({ count: sql`count(*)` })
       .from(players)
-      .where(like(players.name, name))
+      .where(eq(players.name, name.toLowerCase()))
       .limit(1)
       .execute();
 
@@ -44,6 +68,8 @@ export class PlayerDB {
   }
 
   public async set(name: string, password: string) {
+    await this.ensureSchema();
+
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
@@ -54,6 +80,7 @@ export class PlayerDB {
         name: name.toLowerCase(),
         password: hashPassword,
         role: ROLE.BASIC,
+        skin_color: DEFAULT_SKIN_COLOR,
         heart_monitors: JSON.stringify({}),
       })
       .returning({ id: players.id });
@@ -64,15 +91,17 @@ export class PlayerDB {
 
   public async save(data: PeerData) {
     if (!data.userID) return false;
+    await this.ensureSchema();
 
     const res = await this.db
       .update(players)
       .set({
-        name: data.name,
+        name: data.name.toLowerCase(),
         display_name: data.displayName,
         role: data.role,
         inventory: JSON.stringify(data.inventory),
         clothing: JSON.stringify(data.clothing),
+        skin_color: data.skinColor ?? DEFAULT_SKIN_COLOR,
         gems: data.gems,
         level: data.level,
         exp: data.exp,

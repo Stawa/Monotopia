@@ -25,7 +25,8 @@ export class GatewayTile extends Tile {
   ): Promise<boolean> {
     if (!(await super.onPlaceForeground(peer, itemMeta))) return false;
 
-    this.data.flags |= TileFlags.TILEEXTRA | TileFlags.PUBLIC;
+    this.data.flags |= TileFlags.PUBLIC;
+    this.data.flags &= ~(TileFlags.TILEEXTRA | TileFlags.OPEN);
     this.data.entrace = {
       open: true,
     };
@@ -40,24 +41,12 @@ export class GatewayTile extends Tile {
 
   public async serialize(dataBuffer: ExtendBuffer): Promise<void> {
     await super.serialize(dataBuffer);
-
-    dataBuffer.grow(4);
-    dataBuffer.writeU8(this.extraType);
-    dataBuffer.writeString("");
-    dataBuffer.writeU8(this.isPublic() ? 0x0 : 0x8);
   }
 
   public async setFlags(flags: number): Promise<number> {
     flags = await super.setFlags(flags);
-    flags |= TileFlags.TILEEXTRA;
 
-    if (this.isPublic()) {
-      flags |= TileFlags.OPEN;
-    } else {
-      flags &= ~TileFlags.OPEN;
-    }
-
-    return flags;
+    return flags & ~(TileFlags.TILEEXTRA | TileFlags.OPEN);
   }
 
   public async onWrench(peer: Peer): Promise<boolean> {

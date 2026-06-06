@@ -1,0 +1,341 @@
+import { ActionTypes, BlockFlags, BlockFlags2 } from "@growserver/const";
+import { type ItemsInfo } from "@growserver/types";
+import { type ItemDefinition } from "grow-items";
+import { type Base } from "../core/Base";
+
+const FLAG_LABELS: Array<[BlockFlags, string]> = [
+  [BlockFlags.WRENCHABLE, "Wrenchable"],
+  [BlockFlags.SEEDLESS, "Seedless"],
+  [BlockFlags.PERMANENT, "Permanent"],
+  [BlockFlags.DROPLESS, "Dropless"],
+  [BlockFlags.WORLD_LOCKED, "World Locked"],
+  [BlockFlags.AUTO_PICKUP, "Auto Pickup"],
+  [BlockFlags.PUBLIC, "Public"],
+  [BlockFlags.UNTRADEABLE, "Untradeable"],
+];
+
+const FLAG2_LABELS: Array<[BlockFlags2, string]> = [
+  [BlockFlags2.GEMLESS, "Gemless"],
+  [BlockFlags2.TRANSMUTABLE, "Transmutable"],
+  [BlockFlags2.ONE_IN_WORLD, "One Per World"],
+  [BlockFlags2.ONLY_FOR_WORLD_OWNER, "World Owner Only"],
+];
+
+const WIKI_EFFECT_OVERRIDES: Record<number, string[]> = {
+  2952:  ["Dig, Dug"],
+  12172: ["Punch Range", "Build Range"],
+  13022: ["Double Jump", "Slow Fall"],
+  13024: ["Double Jump", "Slow Fall"],
+  14796: ["Punch Range", "Punch Damage"],
+};
+
+const WIKI_CLOTHING_MOD_MATCHERS: Array<[string, RegExp]> = [
+  [
+    "Double Jump",
+    /double jump|jump in mid-?air|jump again|wings?|jetpack|glider|parasol|hover|float/,
+  ],
+  [
+    "Speedy",
+    /speedy|speed boost|move faster|run faster|high speeds|agility|dash/,
+  ],
+  [
+    "Punch Damage",
+    /punch damage|punching damage|enhanced digging|break blocks faster|smash through|rip dirt apart/,
+  ],
+  ["Punch Range", /punch range|long punch|longer punch|reach farther/],
+  ["Punch Power", /punch power/],
+  ["Extra Gems", /extra gems|more gems|additional gems|bonus gems|gem drops?/],
+  [
+    "Slow Fall",
+    /slow fall|slowfall|glide lightly|fall slowly|float gently/,
+  ],
+  [
+    "High Jump",
+    /high jump|jump higher|way up high|lift you through the air/,
+  ],
+  ["Punch Pull", /punch pull|pull.+punch|punch.+pull/],
+  ["Build Range", /build range|place farther|build farther/],
+  ["Light Source", /light source|glow in the dark|illuminat|casts? light/],
+  ["Extra Blocks", /extra blocks|more blocks|bonus blocks/],
+  ["Wall Climbing", /wall climbing|climb walls?|cling to walls?/],
+  ["Fire Hose", /fire hose/],
+  ["Fireproof", /fireproof|fire immunity|immune to fire|resist fire/],
+  ["Ghost Immunity", /ghost immunity|immune to ghosts?/],
+  ["Healing", /healing|heals?/],
+  ["Skin Color", /skin color/],
+  ["Knock Back Reduction", /knock ?back reduction|reduced knock ?back/],
+  ["Damage Reduction", /damage reduction|reduced damage|takes? less damage/],
+  ["Putt Putt Putt", /putt putt putt/],
+  ["Slippery", /slippery/],
+  ["XP Buff", /xp buff|experience boost|extra xp|bonus xp/],
+  ["Miscellaneous", /miscellaneous/],
+  ["Speedy in Water", /speedy in water|move faster underwater|swim faster/],
+  ["Float on Water", /float on water|walk on water/],
+  ["Grow Effect", /grow effect/],
+  ["Zombie Weapon", /zombie weapon/],
+  ["Low Jump", /low jump|jump lower/],
+  ["Cookie Hunter", /cookie hunter/],
+  ["Skating", /skating|ice skates?/],
+];
+
+type ItemEffectSource = {
+  id?: number;
+  name?: string;
+  desc?: string;
+  playMods?: string[];
+};
+
+export interface ItemDetails {
+  id: number;
+  name: string;
+  description: string;
+  rarity: number;
+  type: string;
+  maxAmount: number;
+  flags: string;
+  growTime: number;
+  breakHits: number;
+  recipe: string;
+  playMods: string[];
+  permanent: boolean;
+}
+
+export function cleanItemText(value?: string): string {
+  if (!value) return "";
+
+  const cleaned = value
+    .replace(/\s+/g, " ")
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, "")
+    .trim();
+
+  return /^todo\.?$/i.test(cleaned) ? "" : cleaned;
+}
+
+export function normalizeItemName(value?: string): string {
+  return cleanItemText(value).toLowerCase();
+}
+
+export function formatItemType(type: number | undefined): string {
+  if (type === undefined) return "Unknown";
+
+  return ActionTypes[type] ?? `Type ${type}`;
+}
+
+export function formatItemFlags(flags = 0, flags2 = 0): string {
+  const labels = [
+    ...FLAG_LABELS.filter(([flag]) => !!(flags & flag)).map(
+      ([, label]) => label,
+    ),
+    ...FLAG2_LABELS.filter(([flag]) => !!(flags2 & flag)).map(
+      ([, label]) => label,
+    ),
+  ];
+
+  return labels.length ? labels.join(", ") : "None";
+}
+
+export function getItemEffectText(
+  itemMeta: ItemDefinition | undefined,
+  itemInfo: ItemEffectSource | undefined,
+): string {
+  const wikiEffects = getWikiEffectOverrides(itemMeta, itemInfo);
+
+  return cleanItemText(
+    [
+      itemMeta?.name,
+      itemMeta?.info,
+      itemMeta?.extraOptions,
+      itemMeta?.extraOptions2,
+      itemMeta?.punchOptions,
+      itemInfo?.name,
+      itemInfo?.desc,
+      ...(itemInfo?.playMods ?? []),
+      ...wikiEffects,
+    ].join(" "),
+  ).toLowerCase();
+}
+
+function getWikiEffectOverrides(
+  itemMeta: ItemDefinition | undefined,
+  itemInfo: ItemEffectSource | undefined,
+): string[] {
+  const itemID = itemMeta?.id ?? itemInfo?.id;
+  if (itemID === undefined) return [];
+
+  return WIKI_EFFECT_OVERRIDES[itemID] ?? [];
+}
+
+export function itemHasPunchDamageEffect(
+  itemMeta: ItemDefinition | undefined,
+  itemInfo: ItemEffectSource | undefined,
+): boolean {
+  const itemName = normalizeItemName(itemInfo?.name || itemMeta?.name);
+  const modText = getItemEffectText(itemMeta, itemInfo);
+  const wikiEffects = getWikiEffectOverrides(itemMeta, itemInfo);
+
+  return (
+    wikiEffects.includes("Punch Damage") ||
+    /punch damage|punching damage|enhanced digging|break blocks faster|smash through|rip dirt apart/.test(
+      modText,
+    ) ||
+    /dragoscarf|pickaxe|drill|rock hammer|rock chisel/.test(itemName)
+  );
+}
+
+function addWikiClothingModLabels(
+  effects: Set<string>,
+  combinedText: string,
+): void {
+  WIKI_CLOTHING_MOD_MATCHERS.forEach(([label, matcher]) => {
+    if (matcher.test(combinedText)) effects.add(label);
+  });
+}
+
+export function inferItemEffects(
+  itemMeta: ItemDefinition | undefined,
+  itemInfo: ItemEffectSource | undefined,
+): string[] {
+  const effects = new Set(
+    itemInfo?.playMods?.map(cleanItemText).filter(Boolean) ?? [],
+  );
+  const itemName = normalizeItemName(itemInfo?.name || itemMeta?.name);
+  const modText = getItemEffectText(itemMeta, itemInfo);
+  const combinedText = `${itemName} ${modText}`;
+
+  getWikiEffectOverrides(itemMeta, itemInfo).forEach((effect) => {
+    effects.add(effect);
+  });
+
+  addWikiClothingModLabels(effects, combinedText);
+
+  if (itemHasPunchDamageEffect(itemMeta, itemInfo)) {
+    if (!effects.has("Punch Damage") && !effects.has("Dig, Dug")) {
+      effects.add("Enhanced Digging");
+    }
+  }
+
+  if (/harvester|harvest/.test(combinedText)) {
+    effects.add("Harvester");
+  }
+
+  return [...effects];
+}
+
+function getWikiItem(base: Base, itemID: number): ItemsInfo | undefined {
+  return base.items.wiki.find((item) => item.id === itemID);
+}
+
+function getMetadataText(itemMeta: ItemDefinition | undefined): string {
+  return cleanItemText(
+    [
+      itemMeta?.info,
+      itemMeta?.extraOptions,
+      itemMeta?.extraOptions2,
+      itemMeta?.punchOptions,
+    ].join(" "),
+  );
+}
+
+function inferDescription(
+  base: Base,
+  itemID: number,
+  itemMeta: ItemDefinition | undefined,
+  itemInfo: ItemsInfo | undefined,
+): string {
+  const wikiDescription = cleanItemText(itemInfo?.desc);
+  if (wikiDescription) return wikiDescription;
+
+  const metadataDescription = getMetadataText(itemMeta);
+  if (metadataDescription) return metadataDescription;
+
+  const itemName = itemInfo?.name || itemMeta?.name || `Item ${itemID}`;
+  const type = itemMeta?.type;
+  const typeName = formatItemType(type).toLowerCase().replace(/_/g, " ");
+  const playMods = inferItemEffects(itemMeta, itemInfo);
+
+  if (type === ActionTypes.SEED) {
+    const blockName =
+      base.items.metadata.items.get((itemID - 1).toString())?.name ?? itemName;
+    return `A seed that can be planted or spliced. It grows into ${blockName}.`;
+  }
+
+  if (type === ActionTypes.CLOTHES || type === ActionTypes.ANCES) {
+    return playMods.length
+      ? `A wearable item. Effects: ${playMods.join(", ")}.`
+      : "A wearable item that can be equipped from your backpack.";
+  }
+
+  if (type === ActionTypes.LOCK) {
+    return "A lock used to protect blocks and control who can build in an area.";
+  }
+
+  if (
+    type === ActionTypes.DOOR ||
+    type === ActionTypes.MAIN_DOOR ||
+    type === ActionTypes.PORTAL ||
+    type === ActionTypes.GATEWAY ||
+    type === ActionTypes.FRIENDS_ENTRANCE
+  ) {
+    return "A door or entrance that can move players to another door or world.";
+  }
+
+  if (type === ActionTypes.VENDING_MACHINE) {
+    return (
+      "A lock-owned machine that stores one tradeable item type and sells it " +
+      "for World Locks. Owners can stock it, empty it, and choose either " +
+      "World Locks per item or items per World Lock pricing."
+    );
+  }
+
+  if (type === ActionTypes.SIGN) {
+    return "A writable sign that displays custom text when viewed.";
+  }
+
+  if (type === ActionTypes.BACKGROUND) {
+    return "A background block used to decorate worlds.";
+  }
+
+  if (type === ActionTypes.FOREGROUND) {
+    return "A placeable foreground block used to build worlds.";
+  }
+
+  return `A ${typeName} item.`;
+}
+
+function formatRecipe(base: Base, itemInfo: ItemsInfo | undefined) {
+  if (!itemInfo?.recipe?.splice?.length) return "";
+
+  return itemInfo.recipe.splice
+    .map((seedID) => getItemDetails(base, seedID).name)
+    .join(" + ");
+}
+
+export function hasItemDetails(base: Base, itemID: number): boolean {
+  return (
+    base.items.metadata.items.has(itemID.toString()) ||
+    base.items.wiki.some((item) => item.id === itemID)
+  );
+}
+
+export function getItemDetails(base: Base, itemID: number): ItemDetails {
+  const itemMeta = base.items.metadata.items.get(itemID.toString());
+  const itemInfo = getWikiItem(base, itemID);
+  const name = itemInfo?.name || itemMeta?.name || `Item ${itemID}`;
+  const rarity = itemMeta?.rarity ?? 0;
+
+  return {
+    id:          itemID,
+    name,
+    description: inferDescription(base, itemID, itemMeta, itemInfo),
+    rarity,
+    type:        formatItemType(itemMeta?.type),
+    maxAmount:   itemMeta?.maxAmount ?? 200,
+    flags:       formatItemFlags(itemMeta?.flags, itemMeta?.flags2),
+    growTime:    itemMeta?.growTime ?? 0,
+    breakHits:   itemMeta?.breakHits ?? 0,
+    recipe:      formatRecipe(base, itemInfo),
+    playMods:    inferItemEffects(itemMeta, itemInfo),
+    permanent:   !!((itemMeta?.flags ?? 0) & BlockFlags.PERMANENT),
+  };
+}

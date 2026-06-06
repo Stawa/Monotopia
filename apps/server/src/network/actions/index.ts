@@ -15,6 +15,7 @@ import { StoreBuy } from "./StoreBuy";
 import { StoreHandler } from "./StoreHandler";
 import { Info } from "./Info";
 import { OnFriend } from "./OnFriend";
+import { SetSkin } from "./SetSkin";
 
 export const ActionMap: Record<
   string,
@@ -42,4 +43,6 @@ export const ActionMap: Record<
   ["friend"]:               OnFriend,
   ["friends"]:              OnFriend,
   ["info"]:                 Info,
+  ["setSkin"]:              SetSkin,
+  ["setskin"]:              SetSkin,
 };
