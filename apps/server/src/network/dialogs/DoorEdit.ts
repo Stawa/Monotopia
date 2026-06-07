@@ -61,7 +61,7 @@ export class DoorEdit {
       return;
     }
 
-    const label = (this.action.label ?? "").slice(0, 100);
+    const label = (this.action.label ?? "").trim().slice(0, 100);
     const destination = (this.action.target ?? this.action.destination ?? "")
       .trim()
       .toUpperCase()

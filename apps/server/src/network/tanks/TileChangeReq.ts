@@ -17,25 +17,12 @@ import { tileFrom } from "../../world/tiles";
 import { DialogBuilder } from "@growserver/utils";
 
 export class TileChangeReq {
-  private pos: number;
-  private block: TileData;
-  private itemMeta: ItemDefinition;
-  private unbreakableBlocks = [8, 6, 3760, 7372];
-
   constructor(
     public base: Base,
     public peer: Peer,
     public tank: TankPacket,
     public world: World,
-  ) {
-    this.pos =
-      (this.tank.data?.xPunch as number) +
-      (this.tank.data?.yPunch as number) * this.world.data.width;
-    this.block = this.world.data.blocks[this.pos];
-    this.itemMeta = this.base.items.metadata.items.get(
-      (this.block.fg || this.block.bg).toString(),
-    )!;
-  }
+  ) {}
 
   // this verifies the packet and the tile state.
   public async execute() {
@@ -48,10 +35,9 @@ export class TileChangeReq {
       return;
     this.tank.data!.netID = this.peer.data?.netID;
 
-    const tileData =
-      this.world.data.blocks[
-        this.tank.data.xPunch + this.tank.data.yPunch * this.world.data.width
-      ];
+    const tileData = this.getTargetTile();
+    if (!tileData) return;
+
     const tileItemMeta = this.base.items.metadata.items.get(
       (tileData.fg || tileData.bg).toString(),
     );
@@ -105,10 +91,20 @@ export class TileChangeReq {
     await this.world.saveToDatabase();
   }
 
-  private isEntrance(
-    tileData: TileData,
-    itemMeta?: ItemDefinition,
-  ): boolean {
+  private getTargetTile(): TileData | undefined {
+    const x = this.tank.data?.xPunch;
+    const y = this.tank.data?.yPunch;
+
+    if (typeof x !== "number" || typeof y !== "number") return undefined;
+    if (!Number.isInteger(x) || !Number.isInteger(y)) return undefined;
+    if (x < 0 || y < 0) return undefined;
+    if (x >= this.world.data.width || y >= this.world.data.height)
+      return undefined;
+
+    return this.world.data.blocks[x + y * this.world.data.width];
+  }
+
+  private isEntrance(tileData: TileData, itemMeta?: ItemDefinition): boolean {
     const type = itemMeta?.type;
 
     return (
@@ -142,9 +138,8 @@ export class TileChangeReq {
     tileData.entrace = undefined;
     tileData.flags &= ~(TileFlags.TILEEXTRA | TileFlags.OPEN);
 
-    const item = itemMeta ?? this.base.items.metadata.items.get(
-      tileData.fg.toString(),
-    );
+    const item =
+      itemMeta ?? this.base.items.metadata.items.get(tileData.fg.toString());
     if (!item) return;
 
     const dialog = new DialogBuilder()

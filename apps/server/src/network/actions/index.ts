@@ -16,6 +16,7 @@ import { StoreHandler } from "./StoreHandler";
 import { Info } from "./Info";
 import { OnFriend } from "./OnFriend";
 import { SetSkin } from "./SetSkin";
+import { GoHomeWorld } from "./GoHomeWorld";
 
 export const ActionMap: Record<
   string,
@@ -25,6 +26,7 @@ export const ActionMap: Record<
 > = {
   ["refresh_item_data"]:    RefreshItemData,
   ["enter_game"]:           EnterGame,
+  ["gohomeworld"]:          GoHomeWorld,
   ["quit_to_exit"]:         QuitToExit,
   ["on_quit_to_exit"]:      QuitToExit,
   ["on_use_door_tutorial"]: QuitToExit,

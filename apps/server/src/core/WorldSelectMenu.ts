@@ -5,7 +5,6 @@ import type { Peer } from "./Peer";
 
 const TOP_WORLD_COLOR = 3529161471;
 const RECENT_WORLD_COLOR = 3417414143;
-const HOME_WORLD_COLOR = 4278255615;
 const CATEGORY_WORLD_COLOR = 4287123967;
 
 function getWorldLockData(world: WorldData) {
@@ -50,15 +49,6 @@ function buildRecentWorlds(base: Base, peer: Peer): string {
     .join("\n");
 }
 
-function buildHomeWorld(base: Base, peer: Peer): string {
-  if (!peer.data.homeWorld) return "";
-
-  return `
-add_heading|Home World<CR>|
-${addFloater(base, peer.data.homeWorld, HOME_WORLD_COLOR)}
-`;
-}
-
 function buildCategorizedWorlds(base: Base): string {
   const activeWorlds = Array.from(base.cache.worlds.values()).filter(
     (world) => !!world.playerCount,
@@ -87,11 +77,8 @@ ${worlds
 
 export function buildWorldSelectMenu(base: Base, peer: Peer): string {
   return `
-${buildHomeWorld(base, peer)}
 add_heading|Top Worlds|
 add_floater|START|0|0.5|${TOP_WORLD_COLOR}
-add_floater|START1|0|0.5|${TOP_WORLD_COLOR}
-add_floater|START2|0|0.5|${TOP_WORLD_COLOR}
 ${buildTopWorlds(base)}
 ${buildCategorizedWorlds(base)}
 add_heading|Recently Visited Worlds<CR>|

@@ -344,220 +344,268 @@ async function init() {
     };
   };
 
-  const legacyLoginHtml = () => `<!DOCTYPE html>
+  type AuthView = "login" | "register";
+
+  const authPageHtml = (view: AuthView = "login") => {
+    const isRegister = view === "register";
+    const title = isRegister
+      ? "Create your Grow ID"
+      : "Log in with your Grow ID";
+    const formAction = isRegister
+      ? "/player/signup"
+      : "/player/growid/login/validate";
+    const submitText = isRegister ? "Register" : "Log in";
+    const switchCopy = isRegister
+      ? "Already have an account?"
+      : "Need a Grow ID?";
+    const switchHref = isRegister ? "/player/growid/login" : "/player/signup";
+    const switchLabel = isRegister ? "Log in" : "Register";
+    const growIdAutocomplete = isRegister ? "off" : "username";
+    const passwordAutocomplete = isRegister
+      ? "new-password"
+      : "current-password";
+    const confirmPasswordField = isRegister
+      ? `<label>
+          <span>Confirm password</span>
+          <input name="confirmPassword" type="password" placeholder="Confirm your password *" autocomplete="new-password" required>
+        </label>`
+      : "";
+
+    return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Growtopia Login</title>
+    <title>${title} | Monotopia</title>
     <style>
+      :root {
+        color-scheme: dark;
+        --panel: #173d5b;
+        --panel-dark: #102f47;
+        --panel-light: #215b79;
+        --line: #84c9dd;
+        --line-soft: rgba(132, 201, 221, 0.55);
+        --input: #236f83;
+        --input-focus: #2d8197;
+        --button: #1ec7ee;
+        --button-dark: #0eaad1;
+        --yellow: #f3cf2f;
+        --yellow-dark: #d2ad17;
+        --text: #ffffff;
+        --muted: #b7d5e1;
+        --danger: #ff8176;
+      }
+
       html,
       body {
         width: 100%;
         height: 100%;
         margin: 0;
         font-family:
-          Inter, Segoe UI, Arial, sans-serif;
-        background: #0d1117;
-        color: #f5f7fb;
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Arial, sans-serif;
+        background:
+          linear-gradient(rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.58)),
+          radial-gradient(circle at 20% 15%, rgba(62, 174, 188, 0.26), transparent 34%),
+          radial-gradient(circle at 82% 78%, rgba(8, 72, 103, 0.56), transparent 36%),
+          #05090d;
+        color: var(--text);
       }
 
       body {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 24px;
+        padding: 18px;
         box-sizing: border-box;
       }
 
       main {
-        width: min(940px, 100%);
-        display: grid;
-        grid-template-columns: 0.95fr 1.05fr;
-        gap: 20px;
-        align-items: stretch;
-      }
-
-      .brand {
-        min-height: 520px;
-        padding: 34px;
+        width: min(680px, 100%);
         box-sizing: border-box;
-        border: 1px solid #263040;
-        border-radius: 12px;
-        background: #111926;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-      }
-
-      .brand-mark {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
-        background: #2f80ed;
-        display: grid;
-        place-items: center;
-        font-size: 24px;
-        font-weight: 800;
-        color: #ffffff;
-      }
-
-      .brand h1 {
-        margin: 28px 0 10px;
-        font-size: 38px;
-        line-height: 1.05;
-        font-weight: 800;
-      }
-
-      .brand p {
-        margin: 0;
-        color: #b8c4d6;
-        font-size: 15px;
-        line-height: 1.6;
-      }
-
-      .status {
-        display: flex;
-        gap: 10px;
-        color: #d9e6f8;
-        font-size: 13px;
-      }
-
-      .status span {
-        padding: 8px 10px;
-        border: 1px solid #334153;
-        border-radius: 999px;
-        background: #151f2d;
-      }
-
-      .auth {
-        display: grid;
-        gap: 14px;
+        padding: 34px 44px 36px;
+        border: 5px solid var(--line);
+        border-radius: 6px;
+        background:
+          linear-gradient(180deg, rgba(38, 91, 123, 0.96), rgba(18, 56, 85, 0.98)),
+          var(--panel);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.22) inset,
+          0 20px 52px rgba(0, 0, 0, 0.48);
       }
 
       form {
-        box-sizing: border-box;
-        padding: 26px;
-        background: #f8fafc;
-        border: 1px solid #dce3ec;
-        border-radius: 12px;
-        color: #172033;
-        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.2);
+        margin: 0 auto;
+        max-width: 470px;
       }
 
       form h2 {
-        margin: 0 0 4px;
-        font-size: 22px;
-        font-weight: 700;
+        margin: 0 0 24px;
+        color: var(--text);
+        font-size: 34px;
+        line-height: 1.2;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-align: center;
+        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.32);
       }
 
-      form p {
-        margin: 0 0 18px;
-        color: #617089;
-        font-size: 14px;
+      label {
+        display: block;
+        margin-bottom: 16px;
+      }
+
+      label span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
       }
 
       input {
         width: 100%;
         box-sizing: border-box;
-        margin-bottom: 10px;
-        padding: 13px 14px;
-        border: 1px solid #c7d1df;
-        border-radius: 8px;
-        background: #ffffff;
-        color: #172033;
-        font-size: 15px;
+        min-height: 48px;
+        padding: 12px 16px;
+        border: 2px solid var(--line);
+        border-radius: 4px;
+        background: var(--input);
+        color: var(--text);
+        font-size: 16px;
+        font-weight: 700;
         outline: none;
+        transition:
+          border-color 160ms ease,
+          box-shadow 160ms ease,
+          background-color 160ms ease;
+      }
+
+      input::placeholder {
+        color: rgba(255, 255, 255, 0.72);
       }
 
       input:focus {
-        border-color: #2f80ed;
-        box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.16);
+        border-color: #b8f0ff;
+        background: var(--input-focus);
+        box-shadow: 0 0 0 3px rgba(31, 199, 238, 0.18);
       }
 
       button {
         width: 100%;
-        margin-top: 4px;
-        padding: 13px 14px;
+        min-height: 46px;
+        margin-top: 8px;
+        padding: 11px 18px;
         border: 0;
-        border-radius: 8px;
-        background: #2f80ed;
-        color: #ffffff;
-        font-size: 15px;
-        font-weight: 700;
+        border-radius: 4px;
+        background: var(--button);
+        color: var(--text);
+        font-size: 16px;
+        font-weight: 800;
         cursor: pointer;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.32);
+        box-shadow:
+          0 3px 0 #08799a,
+          0 0 0 2px rgba(255, 255, 255, 0.25) inset;
+        transition:
+          background-color 160ms ease,
+          transform 160ms ease,
+          box-shadow 160ms ease;
       }
 
       button:hover {
-        background: #1f6fd1;
+        background: var(--button-dark);
+        transform: translateY(-1px);
       }
 
-      .secondary {
-        background: #ffffff;
+      button:active {
+        box-shadow:
+          0 1px 0 #08799a,
+          0 0 0 2px rgba(255, 255, 255, 0.2) inset;
+        transform: translateY(2px);
       }
 
-      .secondary button {
-        background: #18976f;
+      .switcher {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 700;
       }
 
-      .secondary button:hover {
-        background: #117b5c;
+      .switcher a {
+        min-width: 120px;
+        box-sizing: border-box;
+        padding: 10px 18px;
+        border-radius: 4px;
+        background: var(--yellow);
+        color: #ffffff;
+        font-weight: 800;
+        text-align: center;
+        text-decoration: none;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
+        box-shadow:
+          0 3px 0 #9c7f0c,
+          0 0 0 2px rgba(255, 255, 255, 0.24) inset;
+        transition: transform 160ms ease, background-color 160ms ease;
+      }
+
+      .switcher a:hover {
+        background: var(--yellow-dark);
+        transform: translateY(-1px);
       }
 
       @media (max-width: 760px) {
         body {
-          align-items: flex-start;
-          padding: 14px;
+          min-height: 100%;
+          padding: 12px;
         }
 
         main {
-          grid-template-columns: 1fr;
+          padding: 26px 20px 28px;
         }
 
-        .brand {
-          min-height: auto;
-          padding: 24px;
+        form h2 {
+          font-size: 28px;
         }
 
-        .brand h1 {
-          font-size: 30px;
+        .switcher {
+          flex-direction: column;
+        }
+
+        .switcher a {
+          width: 100%;
         }
       }
     </style>
   </head>
   <body>
     <main>
-      <section class="brand">
-        <div>
-          <div class="brand-mark">M</div>
-          <h1>Monotopia</h1>
-          <p>Sign in or create a GrowID to enter the server.</p>
+      <form method="POST" action="${formAction}" autocomplete="off">
+        <h2>${title}</h2>
+        <label>
+          <span>Grow ID</span>
+          <input name="growId" type="text" placeholder="Your Growtopia Name *" autocomplete="${growIdAutocomplete}" required>
+        </label>
+        <label>
+          <span>Password</span>
+          <input name="password" type="password" placeholder="Your Growtopia Password *" autocomplete="${passwordAutocomplete}" required>
+        </label>
+        ${confirmPasswordField}
+        <button type="submit">${submitText}</button>
+        <div class="switcher">
+          <span>${switchCopy}</span>
+          <a href="${switchHref}">${switchLabel}</a>
         </div>
-        <div class="status">
-          <span>Secure login</span>
-          <span>Local server</span>
-        </div>
-      </section>
-      <section class="auth">
-        <form method="POST" action="/player/growid/login/validate" autocomplete="off">
-          <h2>Log in</h2>
-          <p>Use your existing GrowID.</p>
-          <input name="growId" type="text" placeholder="GrowID" required>
-          <input name="password" type="password" placeholder="Password" required>
-          <button type="submit">Log in</button>
-        </form>
-        <form class="secondary" method="POST" action="/player/signup" autocomplete="off">
-          <h2>Register</h2>
-          <p>Create a new GrowID.</p>
-          <input name="growId" type="text" placeholder="GrowID" required>
-          <input name="password" type="password" placeholder="Password" required>
-          <input name="confirmPassword" type="password" placeholder="Confirm password" required>
-          <button type="submit">Create account</button>
-        </form>
-      </section>
+      </form>
     </main>
   </body>
 </html>`;
+  };
 
   const validateGrowId = async (
     ctx: Context,
@@ -862,17 +910,19 @@ async function init() {
 
   app.on(["GET", "HEAD"], "/growtopia/*", cdnResponse);
 
-  app.get("/player/login/dashboard", (ctx) => ctx.html(legacyLoginHtml()));
+  app.get("/player/login/dashboard", (ctx) => ctx.html(authPageHtml("login")));
   app.post("/player/login/dashboard", (ctx) =>
     ctx.redirect("/player/growid/login"),
   );
-  app.get("/player/login/dashboard/*", (ctx) => ctx.html(legacyLoginHtml()));
+  app.get("/player/login/dashboard/*", (ctx) =>
+    ctx.html(authPageHtml("login")),
+  );
   app.post("/player/login/dashboard/*", (ctx) =>
     ctx.redirect("/player/growid/login"),
   );
 
   app.get("/player/growid/login", (ctx) => {
-    return ctx.html(legacyLoginHtml());
+    return ctx.html(authPageHtml("login"));
   });
 
   app.get("/player/growid/login/validate", (ctx) => {
@@ -885,7 +935,8 @@ async function init() {
   app.post("/player/growid/login/validate", (ctx) =>
     validateGrowId(ctx, { redirectToDashboard: true }),
   );
-  app.get("/player/signup", (ctx) => ctx.html(legacyLoginHtml()));
+  app.get("/player/signup", (ctx) => ctx.html(authPageHtml("register")));
+  app.get("/player/growid/signup", (ctx) => ctx.html(authPageHtml("register")));
   app.post("/player/signup", createGrowId);
   app.post("/player/growid/signup", createGrowId);
   app.on(["GET", "POST"], "/player/growid/checktoken", checkToken);
