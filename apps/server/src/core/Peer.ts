@@ -415,6 +415,7 @@ export class Peer extends OldPeer<PeerData> {
         homeWorld:         data.homeWorld,
         lastCheckpoint:    data.lastCheckpoint,
         lastVisitedWorlds: data.lastVisitedWorlds,
+        friends:           data.friends,
         worldEnteredAt:    data.worldEnteredAt,
         state:             data.state,
         heartMonitors:     data.heartMonitors,

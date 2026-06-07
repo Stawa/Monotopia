@@ -20,6 +20,11 @@ export class PlayerDB {
       this.db.execute(
         sql.raw("ALTER TABLE players ADD COLUMN IF NOT EXISTS home_world TEXT"),
       ),
+      this.db.execute(
+        sql.raw(
+          "ALTER TABLE players ADD COLUMN IF NOT EXISTS friends TEXT DEFAULT '[]'",
+        ),
+      ),
     ])
       .then(() => undefined)
       .catch((error) => {
@@ -85,6 +90,7 @@ export class PlayerDB {
         password: hashPassword,
         role: ROLE.BASIC,
         skin_color: DEFAULT_SKIN_COLOR,
+        friends: JSON.stringify([]),
         heart_monitors: JSON.stringify({}),
       })
       .returning({ id: players.id });
@@ -110,6 +116,7 @@ export class PlayerDB {
         gems: data.gems,
         level: data.level,
         exp: data.exp,
+        friends: JSON.stringify(data.friends ?? []),
         last_visited_worlds: JSON.stringify(data.lastVisitedWorlds),
         updated_at: new Date().toISOString().slice(0, 19).replace("T", " "),
         heart_monitors: JSON.stringify(Object.fromEntries(data.heartMonitors)),

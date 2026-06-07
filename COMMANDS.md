@@ -87,7 +87,7 @@ Permissions are hierarchical:
 - [ ] `/ignore`
 - [ ] `/me`
 - [ ] `/time`
-- [ ] `/friends`
+- [x] `/friends`
 - [ ] `/top`
 - [ ] `/radio`
 - [ ] `/mods`

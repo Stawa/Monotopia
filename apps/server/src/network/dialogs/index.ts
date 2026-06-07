@@ -15,6 +15,7 @@ import { UseDoorTutorial } from "./UseDoorTutorial";
 import { GatewayEdit } from "./GatewayEdit";
 import { WorldCategoryEdit } from "./WorldCategoryEdit";
 import { WorldTimerEdit } from "./WorldTimerEdit";
+import { FriendsMenu } from "./FriendsMenu";
 
 export const DialogMap: Record<
   string,
@@ -37,5 +38,6 @@ export const DialogMap: Record<
   ["dice_edit"]:            DiceEdit,
   ["world_category_edit"]:  WorldCategoryEdit,
   ["world_timer_edit"]:     WorldTimerEdit,
+  ["friends_menu"]:         FriendsMenu,
   ["on_use_door_tutorial"]: UseDoorTutorial,
 };

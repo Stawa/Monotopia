@@ -375,6 +375,9 @@ export class ITextPacket {
     this.peer.data.lastVisitedWorlds = player.last_visited_worlds
       ? JSON.parse(player.last_visited_worlds.toString())
       : [];
+    this.peer.data.friends = player.friends
+      ? this.parseFriends(player.friends.toString())
+      : [];
     this.peer.data.heartMonitors = new Map<string, Array<number>>(
       Object.entries(JSON.parse(player.heart_monitors.toString())),
     );
@@ -395,5 +398,22 @@ export class ITextPacket {
 
     this.peer.saveToCache();
     this.peer.saveToDatabase();
+  }
+
+  private parseFriends(rawFriends: string): number[] {
+    try {
+      const parsed = JSON.parse(rawFriends);
+      if (!Array.isArray(parsed)) return [];
+
+      return [
+        ...new Set(
+          parsed
+            .map((id) => Number(id))
+            .filter((id) => Number.isInteger(id) && id > 0),
+        ),
+      ];
+    } catch {
+      return [];
+    }
   }
 }

@@ -25,6 +25,7 @@ export const players = pgTable("players", {
   ),
   home_world: text("home_world"),
   last_visited_worlds: text("last_visited_worlds"),
+  friends: text("friends").default("[]"),
   created_at: text("created_at").default(sql`(current_timestamp)`),
   updated_at: text("updated_at").default(sql`(current_timestamp)`),
   heart_monitors: text("heart_monitors").notNull(),

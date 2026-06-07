@@ -43,6 +43,7 @@ export async function setupSeeds() {
       skin_color BIGINT DEFAULT ${DEFAULT_SKIN_COLOR},
       home_world TEXT,
       last_visited_worlds TEXT,
+      friends TEXT DEFAULT '[]',
       created_at TEXT DEFAULT (current_timestamp),
       updated_at TEXT DEFAULT (current_timestamp),
       heart_monitors TEXT NOT NULL
@@ -61,6 +62,7 @@ export async function setupSeeds() {
         clothing: null,
         inventory: null,
         last_visited_worlds: null,
+        friends: JSON.stringify([]),
         created_at: dateNow,
         heart_monitors: JSON.stringify({}), // intialize empty object.
       },
@@ -74,6 +76,7 @@ export async function setupSeeds() {
         clothing: null,
         inventory: null,
         last_visited_worlds: null,
+        friends: JSON.stringify([]),
         created_at: dateNow,
         heart_monitors: JSON.stringify({}), // intialize empty object.
       },
@@ -87,6 +90,7 @@ export async function setupSeeds() {
         clothing: null,
         inventory: null,
         last_visited_worlds: null,
+        friends: JSON.stringify([]),
         created_at: dateNow,
         heart_monitors: JSON.stringify({}), // intialize empty object.
       },

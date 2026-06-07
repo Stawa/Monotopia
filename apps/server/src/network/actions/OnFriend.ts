@@ -1,4 +1,4 @@
-import { Variant } from "growtopia.js";
+import { FriendsMenu } from "../dialogs/FriendsMenu";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { type NonEmptyObject } from "type-fest";
@@ -10,8 +10,11 @@ export class OnFriend {
   ) {}
 
   public async execute(
-    _action: NonEmptyObject<Record<string, string>>,
+    action: NonEmptyObject<Record<string, string>>,
   ): Promise<void> {
-    this.peer.send(Variant.from("OnTextOverlay", "Friends menu is not implemented yet."));
+    await new FriendsMenu(this.base, this.peer, {
+      ...action,
+      dialog_name: "friends_menu",
+    }).execute();
   }
 }
