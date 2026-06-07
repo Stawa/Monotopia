@@ -20,8 +20,18 @@ export class Input {
       if (!text || text.replace(/`.|`/g, "").length < 1) return;
 
       if (text.startsWith("/")) {
+        const world = this.peer.currentWorld();
         const args = text.slice("/".length).split(" ");
         const commandName = args.shift()?.toLowerCase() || "";
+
+        if (
+          commandName === "me" &&
+          world?.isRoyalSilenceEnabled() &&
+          !world.canBypassRoyalSilence(this.peer)
+        ) {
+          this.sendRoyalSilenceMessage();
+          return;
+        }
 
         // Try to find the command directly by name or by its alias
         let Class = CommandMap[commandName];
@@ -143,6 +153,14 @@ export class Input {
 
       const world = this.peer.currentWorld();
       if (world) {
+        if (
+          world.isRoyalSilenceEnabled() &&
+          !world.canBypassRoyalSilence(this.peer)
+        ) {
+          this.sendRoyalSilenceMessage();
+          return;
+        }
+
         world.every((p) => {
           p.send(
             Variant.from(
@@ -167,5 +185,12 @@ export class Input {
         ),
       );
     }
+  }
+
+  private sendRoyalSilenceMessage(): void {
+    this.peer.sendTextBubble(
+      "The Royal Lock prevents peasants from speaking here.",
+      false,
+    );
   }
 }

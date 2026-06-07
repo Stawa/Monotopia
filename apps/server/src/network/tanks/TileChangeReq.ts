@@ -76,7 +76,10 @@ export class TileChangeReq {
 
       if (!itemMeta) return;
 
-      if (itemMeta.type == ActionTypes.BACKGROUND) {
+      if (
+        itemMeta.type == ActionTypes.BACKGROUND ||
+        itemMeta.type == ActionTypes.SHEET_MUSIC
+      ) {
         // we dont want to give the itemType here as to not override current foreground itemType.
         await tileFrom(this.base, this.world, tileData).onPlaceBackground(
           this.peer,

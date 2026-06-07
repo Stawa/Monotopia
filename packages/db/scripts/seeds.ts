@@ -41,6 +41,7 @@ export async function setupSeeds() {
       clothing TEXT,
       inventory TEXT,
       skin_color BIGINT DEFAULT ${DEFAULT_SKIN_COLOR},
+      home_world TEXT,
       last_visited_worlds TEXT,
       created_at TEXT DEFAULT (current_timestamp),
       updated_at TEXT DEFAULT (current_timestamp),

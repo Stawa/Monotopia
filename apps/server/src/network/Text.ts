@@ -369,6 +369,9 @@ export class ITextPacket {
     this.peer.data.world = "EXIT";
     this.peer.data.level = player.level ? player.level : 0;
     this.peer.data.exp = player.exp ? player.exp : 0;
+    this.peer.data.homeWorld = player.home_world
+      ? player.home_world.toString().toUpperCase()
+      : undefined;
     this.peer.data.lastVisitedWorlds = player.last_visited_worlds
       ? JSON.parse(player.last_visited_worlds.toString())
       : [];

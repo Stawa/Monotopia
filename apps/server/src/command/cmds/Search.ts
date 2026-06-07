@@ -15,25 +15,28 @@ export default class Search extends Command {
     super(base, peer, text, args);
     this.opt = {
       command:     ["search"],
-      description: "Search items with searchable item list",
+      description: "Search items and add them to your inventory.",
       cooldown:    5,
       ratelimit:   5,
-      category:    "`oBasic",
-      usage:       "/search",
-      example:     ["/search"],
-      permission:  [ROLE.BASIC, ROLE.SUPPORTER, ROLE.DEVELOPER],
+      category:    "`bDev",
+      usage:       "/search [item name or id]",
+      example:     ["/search dirt", "/search 242"],
+      permission:  [ROLE.DEVELOPER],
     };
   }
 
   public async execute(): Promise<void> {
+    const query = this.args.join(" ").slice(0, 40);
     const dialog = new DialogBuilder()
       .defaultColor()
-      .addInputBox("n", "Search: ", "", 26)
-      .raw(
-        "add_searchable_item_list||sourceType:allItems;listType:iconWithCustomLabel;resultLimit:50|n|\n",
-      )
-      .addQuickExit()
-      .endDialog("search_item", "", "")
+      .addLabelWithIcon("`wDeveloper Item Search``", 32, "big")
+      .addSmallText("Search by item name or ID, then click an item to add it.")
+      .addInputBox("n", "Search:", query, 40)
+      .addInputBox("amount", "Amount:", 200, 3)
+      .addCheckbox("show_seeds", "Show seeds too", "not_selected")
+      .addButton("search_items", "`2Search``")
+      .addSpacer("small")
+      .endDialog("search_item", "Close", "")
       .str();
 
     this.peer.send(Variant.from("OnDialogRequest", dialog));

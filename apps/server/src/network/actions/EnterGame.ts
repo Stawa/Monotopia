@@ -5,8 +5,8 @@ import { DialogBuilder } from "@growserver/utils";
 import { type NonEmptyObject } from "type-fest";
 import { World } from "../../core/World";
 import { tileFrom, tileUpdateMultiple } from "../../world/tiles";
-import { TileFlags } from "@growserver/const";
 import { HeartMonitorTile } from "../../world/tiles/HeartMonitorTile";
+import { buildWorldSelectMenu } from "../../core/WorldSelectMenu";
 
 export class EnterGame {
   constructor(
@@ -31,29 +31,7 @@ export class EnterGame {
     this.peer.send(
       Variant.from(
         "OnRequestWorldSelectMenu",
-        `
-add_heading|Top Worlds|
-add_floater|START|0|0.5|3529161471
-add_floater|START1|0|0.5|3529161471
-add_floater|START2|0|0.5|3529161471
-${Array.from(this.base.cache.worlds.values())
-  .sort((a, b) => (b.playerCount || 0) - (a.playerCount || 0))
-  .slice(0, 6)
-  .map((v) => {
-    if (v.playerCount)
-      return `add_floater|${v.name}|${v.playerCount ?? 0}|0.5|3529161471\n`;
-    else return "";
-  })
-  .join("\n")}
-add_heading|Recently Visited Worlds<CR>|
-${this.peer.data.lastVisitedWorlds
-  ?.reverse()
-  .map((v) => {
-    const count = this.base.cache.worlds.get(v)?.playerCount || 0;
-    return `add_floater|${v}|${count ?? 0}|0.5|3417414143\n`;
-  })
-  .join("\n")}
-`,
+        buildWorldSelectMenu(this.base, this.peer),
       ),
       Variant.from(
         "OnConsoleMessage",

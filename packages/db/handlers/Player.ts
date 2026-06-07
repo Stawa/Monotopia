@@ -11,12 +11,16 @@ export class PlayerDB {
   constructor(private db: PostgresJsDatabase<Record<string, never>>) {}
 
   private async ensureSchema() {
-    PlayerDB.schemaReady ??= this.db
-      .execute(
+    PlayerDB.schemaReady ??= Promise.all([
+      this.db.execute(
         sql.raw(
           `ALTER TABLE players ADD COLUMN IF NOT EXISTS skin_color BIGINT DEFAULT ${DEFAULT_SKIN_COLOR}`,
         ),
-      )
+      ),
+      this.db.execute(
+        sql.raw("ALTER TABLE players ADD COLUMN IF NOT EXISTS home_world TEXT"),
+      ),
+    ])
       .then(() => undefined)
       .catch((error) => {
         PlayerDB.schemaReady = undefined;
@@ -102,6 +106,7 @@ export class PlayerDB {
         inventory: JSON.stringify(data.inventory),
         clothing: JSON.stringify(data.clothing),
         skin_color: data.skinColor ?? DEFAULT_SKIN_COLOR,
+        home_world: data.homeWorld ?? null,
         gems: data.gems,
         level: data.level,
         exp: data.exp,

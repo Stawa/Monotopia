@@ -106,9 +106,14 @@ export interface LockChild {
 // contains all WorldLock specific configuration.
 export interface WorldLockData {
   bpm: number;
+  category: string;
   customMusicBlocksDisabled: boolean;
   invisMusicBlocks: boolean;
   minLevel: number;
+  timerMinutes: number;
+  royalSilence?: boolean;
+  royalRainbows?: boolean;
+  royalRadar?: boolean;
 }
 
 // the lock itself

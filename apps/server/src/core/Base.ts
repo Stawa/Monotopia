@@ -28,7 +28,12 @@ import { Peer } from "./Peer";
 import { World } from "./World";
 import { mkdir, writeFile, readFile } from "fs/promises";
 import chokidar from "chokidar";
-import { ActionTypes, BlockFlags, ITEMS_DAT_NAME } from "@growserver/const";
+import {
+  ActionTypes,
+  BlockFlags,
+  ITEM_ROYAL_LOCK,
+  ITEMS_DAT_NAME,
+} from "@growserver/const";
 import { ItemsDat, ItemsDatMeta, type ItemDefinition } from "grow-items";
 import { config as configServer } from "@growserver/config";
 import logger from "@growserver/logger";
@@ -90,6 +95,11 @@ const CORE_ITEM_OVERRIDES: Record<number, Partial<ItemDefinition>> = {
   },
   1796: {
     name:  "Diamond Lock",
+    type:  ActionTypes.LOCK,
+    flags: BlockFlags.WRENCHABLE,
+  },
+  [ITEM_ROYAL_LOCK]: {
+    name:  "Royal Lock",
     type:  ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },

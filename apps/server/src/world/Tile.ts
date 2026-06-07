@@ -101,6 +101,17 @@ export class Tile {
     peer: Peer,
     itemMeta: ItemDefinition,
   ): Promise<boolean> {
+    if (itemMeta.type === ActionTypes.SHEET_MUSIC && !this.world.getOwnerUID()) {
+      peer.sendTextBubble(
+        "Sheet Music can only be placed in World Locked worlds.",
+        false,
+      );
+      peer.sendOnPlayPositioned("audio/cant_place_tile.wav", {
+        netID: peer.data?.netID,
+      });
+      return false;
+    }
+
     if (
       !(await this.world.hasTilePermission(
         peer.data.userID,
@@ -136,15 +147,17 @@ export class Tile {
     this.data.bg = itemMeta.id!;
     if (!this.data.fg) this.data.damage = 0;
 
-    const tank = TankPacket.from({
-      type:   TankTypes.TILE_CHANGE_REQUEST,
-      xPunch: this.data.x,
-      yPunch: this.data.y,
-      info:   this.data.bg,
-    });
-
     this.world.every((p) => {
-      p.send(tank);
+      p.send(
+        TankPacket.from({
+          type:   TankTypes.TILE_CHANGE_REQUEST,
+          xPunch: this.data.x,
+          yPunch: this.data.y,
+          info:   this.world.shouldHideSheetMusicFrom(p, this.data)
+            ? 0
+            : this.data.bg,
+        }),
+      );
     });
 
     peer.removeItemInven(itemMeta.id!, 1);

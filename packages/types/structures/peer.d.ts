@@ -17,8 +17,10 @@ export interface PeerData {
   skinColor?: number;
   exp: number;
   level: number;
+  homeWorld?: string;
   lastCheckpoint?: CheckPoint;
   lastVisitedWorlds?: string[];
+  worldEnteredAt?: number;
   state: PeerState;
   heartMonitors: Map<string, Array<number>>; // A map that contains the world name as the key and the array number as the list of tile index.
 }

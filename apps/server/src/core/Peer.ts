@@ -412,8 +412,10 @@ export class Peer extends OldPeer<PeerData> {
         skinColor:         data.skinColor,
         exp:               data.exp,
         level:             data.level,
+        homeWorld:         data.homeWorld,
         lastCheckpoint:    data.lastCheckpoint,
         lastVisitedWorlds: data.lastVisitedWorlds,
+        worldEnteredAt:    data.worldEnteredAt,
         state:             data.state,
         heartMonitors:     data.heartMonitors,
       };
@@ -622,10 +624,10 @@ export class Peer extends OldPeer<PeerData> {
     else return new World(this.base, this.data.world);
   }
 
-  public leaveWorld() {
+  public leaveWorld(sendMenu = true) {
     if (!this.data.world) return;
     const world = this.currentWorld();
-    world?.leave(this);
+    world?.leave(this, sendMenu);
   }
 
   public async enterWorld(worldName: string, x?: number, y?: number) {
@@ -635,10 +637,12 @@ export class Peer extends OldPeer<PeerData> {
 
     const mainDoor = world?.data.blocks?.find((block) => block.fg === 6);
 
-    const xDoor = x ? x : (mainDoor?.x as number);
-    const yDoor = y ? y : (mainDoor?.y as number);
+    const xDoor = x !== undefined ? x : (mainDoor?.x as number);
+    const yDoor = y !== undefined ? y : (mainDoor?.y as number);
 
-    await world?.enter(this, xDoor, yDoor);
+    const entered = await world?.enter(this, xDoor, yDoor);
+    if (!entered) return;
+
     this.inventory();
     this.countryState();
     this.sound("audio/door_open.wav");
@@ -720,8 +724,10 @@ export class Peer extends OldPeer<PeerData> {
     return this.data.inventory?.items.find((i) => i.id === id);
   }
 
-  public sendClothes() {
+  public sendClothes(overrides: Partial<PeerData["clothing"]> = {}) {
     const world = this.currentWorld();
+    const clothing = { ...this.data.clothing, ...overrides };
+
     if (world) {
       world.every((p) => {
         p.send(
@@ -731,22 +737,22 @@ export class Peer extends OldPeer<PeerData> {
             },
             "OnSetClothing",
             [
-              this.data.clothing.hair,
-              this.data.clothing.shirt,
-              this.data.clothing.pants,
+              clothing.hair,
+              clothing.shirt,
+              clothing.pants,
             ],
             [
-              this.data.clothing.feet,
-              this.data.clothing.face,
-              this.data.clothing.hand,
+              clothing.feet,
+              clothing.face,
+              clothing.hand,
             ],
             [
-              this.data.clothing.back,
-              this.data.clothing.mask,
-              this.data.clothing.necklace,
+              clothing.back,
+              clothing.mask,
+              clothing.necklace,
             ],
             this.getSkinColor(),
-            [this.data.clothing.ances, 0.0, 0.0],
+            [clothing.ances, 0.0, 0.0],
           ),
         );
       });

@@ -433,6 +433,8 @@ export const LOCKS = [
   },
 ];
 
+export const ITEM_ROYAL_LOCK = 4802;
+
 export const TileIgnore = {
   blockIDsToIgnoreByLock: [6, 8],
   blockActionTypesToIgnore: [
@@ -580,3 +582,22 @@ export enum StateFlags {
 // Item IDs
 export const ITEM_DIGGERS_SPADE = 2952; // Digger's Spade hand item
 export const ITEM_RAYMANS_FIST = 5480; // Rayman's Fist hand item
+export const ITEM_RAINBOW_SHOES = 11164; // Rainbow trail feet item
+
+export const WORLD_CATEGORIES = [
+  "None",
+  "Adventure",
+  "Art",
+  "Farm",
+  "Game",
+  "Information",
+  "Music",
+  "Parkour",
+  "Puzzle",
+  "Roleplay",
+  "Shop",
+  "Social",
+  "Storage",
+  "Story",
+  "Trade",
+] as const;

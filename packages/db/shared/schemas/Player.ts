@@ -23,6 +23,7 @@ export const players = pgTable("players", {
   skin_color: pgBigInt("skin_color", { mode: "number" }).default(
     DEFAULT_SKIN_COLOR,
   ),
+  home_world: text("home_world"),
   last_visited_worlds: text("last_visited_worlds"),
   created_at: text("created_at").default(sql`(current_timestamp)`),
   updated_at: text("updated_at").default(sql`(current_timestamp)`),

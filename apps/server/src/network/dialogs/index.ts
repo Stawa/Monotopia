@@ -13,6 +13,8 @@ import { DisplayBlockEdit } from "./DisplayBlockEdit";
 import { DiceEdit } from "./DiceEdit";
 import { UseDoorTutorial } from "./UseDoorTutorial";
 import { GatewayEdit } from "./GatewayEdit";
+import { WorldCategoryEdit } from "./WorldCategoryEdit";
+import { WorldTimerEdit } from "./WorldTimerEdit";
 
 export const DialogMap: Record<
   string,
@@ -33,5 +35,7 @@ export const DialogMap: Record<
   ["revoke_lock_access"]:   RevokeLockAccess,
   ["displayblock_edit"]:    DisplayBlockEdit,
   ["dice_edit"]:            DiceEdit,
+  ["world_category_edit"]:  WorldCategoryEdit,
+  ["world_timer_edit"]:     WorldTimerEdit,
   ["on_use_door_tutorial"]: UseDoorTutorial,
 };

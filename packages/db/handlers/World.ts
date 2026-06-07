@@ -32,7 +32,7 @@ export class WorldDB {
   public async set(data: WorldData) {
     if (!data.name && !data.blocks && !data.width && !data.height) return 0;
 
-    const worldLockData = data.worldLockIndex
+    const worldLockData = data.worldLockIndex !== undefined
       ? data.blocks[data.worldLockIndex].lock
       : null;
 
@@ -60,7 +60,7 @@ export class WorldDB {
   public async save(data: WorldData) {
     if (!data.name && !data.blocks && !data.width && !data.height) return false;
 
-    const worldLockData = data.worldLockIndex
+    const worldLockData = data.worldLockIndex !== undefined
       ? data.blocks[data.worldLockIndex].lock
       : null;
 

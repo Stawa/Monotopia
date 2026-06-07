@@ -2,11 +2,13 @@ import { Variant } from "growtopia.js";
 import {
   ActionTypes,
   BlockFlags,
+  ITEM_ROYAL_LOCK,
   LockPermission,
   LOCKS,
   ROLE,
   TileExtraTypes,
   TileFlags,
+  WORLD_CATEGORIES,
 } from "@growserver/const";
 import type { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
@@ -227,7 +229,7 @@ export class LockTile extends Tile {
     } else {
       dialog.addCheckbox(
         "disable_music",
-        "Disable Custom Music Blocks (NOT IMPLEMENTED)",
+        "Disable Custom Music Blocks",
         this.data.worldLockData.customMusicBlocksDisabled
           ? "selected"
           : "not_selected",
@@ -235,7 +237,7 @@ export class LockTile extends Tile {
       if (!this.data.worldLockData.customMusicBlocksDisabled) {
         dialog.addInputBox(
           "tempo",
-          "Music BPM (NOT IMPLEMENTED)",
+          "Music BPM",
           this.data.worldLockData.bpm,
           3,
         );
@@ -243,24 +245,56 @@ export class LockTile extends Tile {
       dialog
         .addCheckbox(
           "invisible_music",
-          "Make Custom Music Block Invisible (NOT IMPLEMENTED)",
+          "Make Custom Music Blocks Invisible",
           this.data.worldLockData.invisMusicBlocks
             ? "selected"
             : "not_selected",
         )
         .addCheckbox(
           "home_world",
-          "Set as Home World (NOT IMPLEMENTED)",
-          "not_selected",
+          "Set as Home World",
+          peer.data.homeWorld === this.world.worldName
+            ? "selected"
+            : "not_selected",
         )
         .addInputBox(
           "minimum_level",
-          "World Level: (NOT IMPLEMENTED)",
+          "World Level:",
           this.data.worldLockData.minLevel,
+          3,
         )
         .addSmallText("Set minimum world entry level")
-        .addButton("session_length", "Set World Timer (NOT IMPLEMENTED)")
-        .addButton("set_category", `Category: None (NOT IMPLEMENTED)`);
+        .addButton(
+          "session_length",
+          `World Timer: ${this.getTimerLabel()}`,
+        )
+        .addButton(
+          "set_category",
+          `Category: ${this.getCategoryLabel()}`,
+        );
+
+      if (this.data.fg === ITEM_ROYAL_LOCK) {
+        dialog
+          .addSpacer("small")
+          .addLabel("Ye Royal Options:")
+          .addCheckbox(
+            "royal_silence",
+            '"SILENCE, Peasants"',
+            this.data.worldLockData.royalSilence
+              ? "selected"
+              : "not_selected",
+          )
+          .addCheckbox(
+            "royal_rainbows",
+            '"Rainbows For The King"',
+            this.data.worldLockData.royalRainbows
+              ? "selected"
+              : "not_selected",
+          )
+          .addSmallText(
+            "Peasant Radar is always active for players with access.",
+          );
+      }
     }
 
     dialog.endDialog("area_lock_edit", "Cancel", "OK");
@@ -354,9 +388,14 @@ export class LockTile extends Tile {
 
     this.data.worldLockData = {
       bpm:                       100,
+      category:                  WORLD_CATEGORIES[0],
       customMusicBlocksDisabled: false,
       invisMusicBlocks:          false,
       minLevel:                  1,
+      timerMinutes:              0,
+      royalSilence:              false,
+      royalRainbows:             false,
+      royalRadar:                this.data.fg === ITEM_ROYAL_LOCK,
     };
 
     this.world.data.worldLockIndex =
@@ -416,5 +455,16 @@ export class LockTile extends Tile {
       false,
     );
     this.sendLockSound(peer);
+  }
+
+  private getTimerLabel(): string {
+    const minutes = this.data.worldLockData?.timerMinutes ?? 0;
+    if (minutes <= 0) return "Off";
+
+    return `${minutes} min`;
+  }
+
+  private getCategoryLabel(): string {
+    return this.data.worldLockData?.category ?? WORLD_CATEGORIES[0];
   }
 }

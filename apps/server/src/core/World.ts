@@ -3,6 +3,8 @@ import { TileData, WorldData } from "@growserver/types";
 import { Base } from "./Base";
 import {
   ActionTypes,
+  ITEM_RAINBOW_SHOES,
+  ITEM_ROYAL_LOCK,
   LockPermission,
   PacketTypes,
   ROLE,
@@ -16,6 +18,9 @@ import { Default } from "../world/generation/Default";
 import { Tile } from "../world/Tile";
 import { tileFrom } from "../world/tiles";
 import { ItemDefinition, ItemsDatMeta } from "grow-items";
+import { buildWorldSelectMenu } from "./WorldSelectMenu";
+
+const WORLD_TIMER_MINUTES_TO_MS = 60 * 1000;
 
 export class World {
   public data: WorldData;
@@ -59,6 +64,8 @@ export class World {
       : 0;
 
     peer.data.lastCheckpoint = undefined;
+    peer.data.worldEnteredAt = undefined;
+    this.clearWorldTimer(peer);
 
     peer.send(
       TextPacket.from(
@@ -105,29 +112,7 @@ export class World {
         Variant.from(
           { delay: 500 },
           "OnRequestWorldSelectMenu",
-          `
-add_heading|Top Worlds|
-add_floater|START|0|0.5|3529161471
-add_floater|START1|0|0.5|3529161471
-add_floater|START2|0|0.5|3529161471
-${Array.from(this.base.cache.worlds.values())
-  .sort((a, b) => (b.playerCount || 0) - (a.playerCount || 0))
-  .slice(0, 6)
-  .map((v) => {
-    if (v.playerCount)
-      return `add_floater|${v.name}|${v.playerCount ?? 0}|0.5|3529161471\n`;
-    else return "";
-  })
-  .join("\n")}
-add_heading|Recently Visited Worlds<CR>|
-${peer.data.lastVisitedWorlds
-  ?.reverse()
-  .map((v) => {
-    const count = this.base.cache.worlds.get(v)?.playerCount || 0;
-    return `add_floater|${v}|${count ?? 0}|0.5|3417414143\n`;
-  })
-  .join("\n")}
-`,
+          buildWorldSelectMenu(this.base, peer),
         ),
         Variant.from(
           { delay: 500 },
@@ -161,10 +146,12 @@ ${peer.data.lastVisitedWorlds
             ? JSON.parse(world.dropped.toString())
             : { uid: 0, items: [] },
           // owner: world.owner ? JSON.parse(world.owner.toString()) : null,
-          weather:        { id: world.weather_id || 41 },
-          worldLockIndex: world.worldlock_index
-            ? world.worldlock_index
-            : undefined,
+          weather: { id: world.weather_id || 41 },
+          worldLockIndex:
+            world.worldlock_index !== null &&
+            world.worldlock_index !== undefined
+              ? world.worldlock_index
+              : undefined,
           // minLevel: world.minimum_level || 1,
         };
       } else {
@@ -203,11 +190,26 @@ ${peer.data.lastVisitedWorlds
     }
   }
 
-  public async enter(peer: Peer, x: number, y: number) {
+  public async enter(peer: Peer, x: number, y: number): Promise<boolean> {
     await this.getData();
 
     if (typeof x !== "number") x = -1;
     if (typeof y !== "number") y = -1;
+
+    if (!this.canEnterByLevel(peer)) {
+      const minLevel = this.getWorldMinimumLevel();
+
+      peer.data.world = "EXIT";
+      peer.send(
+        Variant.from("OnFailedToEnterWorld", 1),
+        Variant.from(
+          "OnConsoleMessage",
+          `You must be level \`w${minLevel}\`\` to enter \`2${this.worldName}\`\`.`,
+        ),
+      );
+      await peer.saveToCache();
+      return false;
+    }
 
     // Validate world data
     if (!this.data || !this.data.blocks || this.data.blocks.length === 0) {
@@ -215,7 +217,7 @@ ${peer.data.lastVisitedWorlds
       peer.send(
         Variant.from("OnConsoleMessage", "`4Error: World data is corrupted!"),
       );
-      return;
+      return false;
     }
 
     const HEADER_LENGTH = this.worldName.length + 20;
@@ -253,6 +255,7 @@ ${peer.data.lastVisitedWorlds
 
     try {
       for (const block of this.data.blocks) {
+        const visibleBlock = this.getVisibleTileForPeer(block, peer);
         // const item = this.base.items.metadata.items.find(
         //   (i) => i.id === block.fg
         // );
@@ -260,7 +263,9 @@ ${peer.data.lastVisitedWorlds
         // const blockBuf = new Tile(this.base, this, block).serialize(item?.type as number);
         // const type = item?.type as number;
         // const blockBuf = await tileParse(type, this.base, this, block);
-        const blockBuf = (await tileFrom(this.base, this, block).parse()).data;
+        const blockBuf = (
+          await tileFrom(this.base, this, visibleBlock).parse()
+        ).data;
 
         blockBuf.forEach((b) => blockBytes.push(b));
       }
@@ -330,6 +335,7 @@ ${peer.data.lastVisitedWorlds
     peer.data.x = xPos;
     peer.data.y = yPos;
     peer.data.world = this.worldName;
+    peer.data.worldEnteredAt = Date.now();
 
     peer.send(
       Variant.from(
@@ -464,8 +470,12 @@ ${peer.data.lastVisitedWorlds
       ? this.data.playerCount + 1
       : 1;
 
-    this.saveToCache();
-    peer.saveToCache();
+    await this.saveToCache();
+    this.scheduleWorldTimer(peer);
+    await peer.saveToCache();
+    this.refreshRoyalRainbowVisuals();
+
+    return true;
   }
 
   public async generate(cache?: boolean) {
@@ -671,7 +681,7 @@ ${peer.data.lastVisitedWorlds
           );
         }
       }
-    } else if (this.data.worldLockIndex) {
+    } else if (this.data.worldLockIndex !== undefined) {
       const worldLock = this.data.blocks[this.data.worldLockIndex];
 
       if (worldLock.flags & TileFlags.PUBLIC) return true;
@@ -694,15 +704,26 @@ ${peer.data.lastVisitedWorlds
   public async every(
     callbackfn: (peer: Peer, netID: number) => void,
   ): Promise<void> {
-    if (this.data.playerCount == 0) {
-      return;
+    for (const peer of this.getPeers()) {
+      callbackfn(peer, peer.data.netID);
     }
-    this.base.cache.peers.forEach((p, k) => {
+  }
+
+  public getPeers(): Peer[] {
+    const peers: Peer[] = [];
+
+    if (this.data.playerCount == 0) {
+      return peers;
+    }
+
+    this.base.cache.peers.forEach((p) => {
       const pp = new Peer(this.base, p.netID);
       if (pp.data.world == this.data.name) {
-        callbackfn(pp, p.netID);
+        peers.push(pp);
       }
     });
+
+    return peers;
   }
 
   public getPeerByNetID(netID: number): Peer | undefined {
@@ -716,14 +737,225 @@ ${peer.data.lastVisitedWorlds
     return peer;
   }
 
+  public getWorldLockTile(): TileData | undefined {
+    if (this.data.worldLockIndex === undefined) return undefined;
+    return this.data.blocks[this.data.worldLockIndex];
+  }
+
   public getOwnerUID(): number | undefined {
-    if (this.data.worldLockIndex) {
-      const lock = this.data.blocks[this.data.worldLockIndex];
-      if (lock.lock && lock.worldLockData) {
-        return lock.lock.ownerUserID;
-      }
+    const lock = this.getWorldLockTile();
+    if (lock?.lock && lock.worldLockData) {
+      return lock.lock.ownerUserID;
     }
     return undefined;
+  }
+
+  public hasWorldLockAccess(userID: number): boolean {
+    const lock = this.getWorldLockTile();
+    if (!lock?.lock || !lock.worldLockData) return false;
+
+    return (
+      lock.lock.ownerUserID === userID ||
+      !!lock.lock.adminIDs?.includes(userID)
+    );
+  }
+
+  public getWorldMinimumLevel(): number {
+    return this.getWorldLockTile()?.worldLockData?.minLevel ?? 1;
+  }
+
+  public canEnterByLevel(peer: Peer): boolean {
+    const minLevel = this.getWorldMinimumLevel();
+
+    if (minLevel <= 1) return true;
+    if (peer.data.level >= minLevel) return true;
+    if (this.hasWorldLockAccess(peer.data.userID)) return true;
+
+    return (
+      peer.data.role === ROLE.MODERATOR || peer.data.role === ROLE.DEVELOPER
+    );
+  }
+
+  public getWorldTimerMinutes(): number {
+    return this.getWorldLockTile()?.worldLockData?.timerMinutes ?? 0;
+  }
+
+  public canBypassWorldTimer(peer: Peer): boolean {
+    return (
+      this.hasWorldLockAccess(peer.data.userID) ||
+      peer.data.role === ROLE.MODERATOR ||
+      peer.data.role === ROLE.DEVELOPER
+    );
+  }
+
+  public scheduleWorldTimer(peer: Peer): void {
+    const timerMinutes = this.getWorldTimerMinutes();
+
+    if (timerMinutes <= 0 || this.canBypassWorldTimer(peer)) {
+      this.clearWorldTimer(peer);
+      return;
+    }
+
+    const enteredAt = peer.data.worldEnteredAt ?? Date.now();
+    peer.data.worldEnteredAt = enteredAt;
+
+    const delay = Math.max(
+      1000,
+      enteredAt + timerMinutes * WORLD_TIMER_MINUTES_TO_MS - Date.now(),
+    );
+    const fireAt = Date.now() + delay;
+    const key = this.getWorldTimerKey(peer);
+    const existingTimer = this.base.cache.cooldown.get(key);
+
+    if (
+      existingTimer &&
+      existingTimer.limit === enteredAt &&
+      existingTimer.time === fireAt
+    ) {
+      return;
+    }
+
+    this.base.cache.cooldown.set(key, {
+      limit: enteredAt,
+      time:  fireAt,
+    });
+
+    setTimeout(() => {
+      void this.handleWorldTimerExpiry(peer.data.netID, enteredAt, fireAt);
+    }, delay);
+  }
+
+  public refreshWorldTimers(): void {
+    for (const peer of this.getPeers()) {
+      this.scheduleWorldTimer(peer);
+    }
+  }
+
+  private getWorldTimerKey(peer: Peer): string {
+    return `world-timer-${this.worldName}-${peer.data.netID}`;
+  }
+
+  private clearWorldTimer(peer: Peer): void {
+    this.base.cache.cooldown.delete(this.getWorldTimerKey(peer));
+  }
+
+  private async handleWorldTimerExpiry(
+    netID: number,
+    enteredAt: number,
+    fireAt: number,
+  ): Promise<void> {
+    const peer = new Peer(this.base, netID);
+    const key = this.getWorldTimerKey(peer);
+    const timer = this.base.cache.cooldown.get(key);
+
+    if (!timer || timer.limit !== enteredAt || timer.time !== fireAt) return;
+    if (peer.data.world !== this.worldName) {
+      this.base.cache.cooldown.delete(key);
+      return;
+    }
+
+    await this.getData();
+
+    const timerMinutes = this.getWorldTimerMinutes();
+    if (timerMinutes <= 0 || this.canBypassWorldTimer(peer)) {
+      this.base.cache.cooldown.delete(key);
+      return;
+    }
+
+    const currentEnteredAt = peer.data.worldEnteredAt ?? enteredAt;
+    const remaining =
+      currentEnteredAt + timerMinutes * WORLD_TIMER_MINUTES_TO_MS - Date.now();
+
+    if (remaining > 0) {
+      this.scheduleWorldTimer(peer);
+      return;
+    }
+
+    peer.sendConsoleMessage(
+      `\`oThe World Timer for \`w${this.worldName}\`\` has expired.`,
+    );
+    peer.sendTextBubble("World Timer expired.", false);
+    peer.leaveWorld();
+    this.base.cache.cooldown.delete(key);
+  }
+
+  public isSheetMusicItem(itemID: number): boolean {
+    const item = this.base.items.metadata.items.get(itemID.toString());
+
+    return item?.type === ActionTypes.SHEET_MUSIC;
+  }
+
+  public shouldHideSheetMusicFrom(peer: Peer, tile: TileData): boolean {
+    const worldLockData = this.getWorldLockTile()?.worldLockData;
+    if (!this.isSheetMusicItem(tile.bg)) return false;
+    if (worldLockData?.customMusicBlocksDisabled) return true;
+    if (!worldLockData?.invisMusicBlocks) return false;
+    if (this.hasWorldLockAccess(peer.data.userID)) return false;
+
+    return (
+      peer.data.role !== ROLE.MODERATOR && peer.data.role !== ROLE.DEVELOPER
+    );
+  }
+
+  public getVisibleTileForPeer(tile: TileData, peer: Peer): TileData {
+    if (!this.shouldHideSheetMusicFrom(peer, tile)) return tile;
+
+    return { ...tile, bg: 0 };
+  }
+
+  public async refreshMusicBlockVisibility(): Promise<void> {
+    const musicBlocks = this.data.blocks.filter((block) =>
+      this.isSheetMusicItem(block.bg),
+    );
+
+    for (const peer of this.getPeers()) {
+      for (const block of musicBlocks) {
+        await tileFrom(
+          this.base,
+          this,
+          this.getVisibleTileForPeer(block, peer),
+        ).tileUpdate(peer);
+      }
+    }
+  }
+
+  public refreshRoyalRainbowVisuals(): void {
+    this.every((peer) => {
+      if (
+        this.isRoyalRainbowsEnabled() &&
+        this.hasWorldLockAccess(peer.data.userID)
+      ) {
+        peer.sendClothes({ feet: ITEM_RAINBOW_SHOES });
+      } else {
+        peer.sendClothes();
+      }
+    });
+  }
+
+  public canBypassRoyalSilence(peer: Peer): boolean {
+    return (
+      peer.data.role === ROLE.MODERATOR ||
+      peer.data.role === ROLE.DEVELOPER ||
+      this.hasWorldLockAccess(peer.data.userID)
+    );
+  }
+
+  public getRoyalLockTile(): TileData | undefined {
+    const lock = this.getWorldLockTile();
+    if (lock?.fg === ITEM_ROYAL_LOCK && lock.worldLockData) return lock;
+    return undefined;
+  }
+
+  public isRoyalSilenceEnabled(): boolean {
+    return !!this.getRoyalLockTile()?.worldLockData?.royalSilence;
+  }
+
+  public isRoyalRainbowsEnabled(): boolean {
+    return !!this.getRoyalLockTile()?.worldLockData?.royalRainbows;
+  }
+
+  public isRoyalRadarEnabled(): boolean {
+    return !!this.getRoyalLockTile()?.worldLockData?.royalRadar;
   }
 
   // Helper functino to get lock owner user ID on a specific tile.
@@ -740,7 +972,7 @@ ${peer.data.lastVisitedWorlds
     // the tile being asked is the lock itself. No one have permission except the owner
     else if (tile.lock) {
       return tile.lock.ownerUserID;
-    } else if (this.data.worldLockIndex) {
+    } else if (this.data.worldLockIndex !== undefined) {
       const worldLock = this.data.blocks[this.data.worldLockIndex];
       return worldLock.lock?.ownerUserID;
     } else {
