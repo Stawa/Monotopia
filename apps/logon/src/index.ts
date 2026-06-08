@@ -282,24 +282,34 @@ async function init() {
   const app = new Hono();
   const buns = process.versions.bun ? await import("hono/bun") : undefined;
   const db = new Database();
+  const authHeaders = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    Expires: "0",
+    Pragma: "no-cache",
+  };
+
+  const firstString = (...values: unknown[]) =>
+    values.find(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    );
 
   const authError = (ctx: Context, message: string, cause?: unknown) => {
     if (cause) logger.warn(`${message}: ${cause}`);
-    return ctx.html(
-      JSON.stringify({
+    return ctx.json(
+      {
         status: "failed",
         message,
         token: "",
+        ltoken: "",
+        refreshToken: "",
+        valkey: "",
         url: "",
         accountType: "growtopia",
         accountAge: 2,
-      }),
-      200,
-      {
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-        Expires: "0",
-        Pragma: "no-cache",
       },
+      200,
+      authHeaders,
     );
   };
 
@@ -309,20 +319,19 @@ async function init() {
         status: "success",
         message: "Account Validated.",
         token,
+        ltoken: token,
+        refreshToken: token,
+        valkey: token,
         url: "",
         accountType: "growtopia",
         accountAge: 2,
       }),
       200,
-      {
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-        Expires: "0",
-        Pragma: "no-cache",
-      },
+      authHeaders,
     );
 
-  const linkDashboardValidatePath = (token: string) =>
-    `/player/link/dashboard/validate/${encodeURIComponent(token)}/growtopia`;
+  const clientLoginValidatePath = (token: string) =>
+    `/player/growid/login/validate?token=${encodeURIComponent(token)}`;
 
   const getCredentials = async (ctx: Context) => {
     const contentType = ctx.req.header("content-type") ?? "";
@@ -383,17 +392,29 @@ async function init() {
         --panel: #173d5b;
         --panel-dark: #102f47;
         --panel-light: #215b79;
-        --line: #84c9dd;
+        --line: #a9e7f6;
         --line-soft: rgba(132, 201, 221, 0.55);
-        --input: #236f83;
-        --input-focus: #2d8197;
+        --input: #155f75;
+        --input-focus: #1f7388;
         --button: #1ec7ee;
         --button-dark: #0eaad1;
         --yellow: #f3cf2f;
         --yellow-dark: #d2ad17;
         --text: #ffffff;
-        --muted: #b7d5e1;
+        --muted: #e6f8ff;
         --danger: #ff8176;
+        --text-shadow-strong:
+          -1px -1px 0 rgba(0, 0, 0, 0.55),
+          1px -1px 0 rgba(0, 0, 0, 0.55),
+          -1px 1px 0 rgba(0, 0, 0, 0.55),
+          1px 1px 0 rgba(0, 0, 0, 0.55),
+          0 3px 0 rgba(0, 0, 0, 0.48);
+        --text-shadow-soft:
+          -1px -1px 0 rgba(0, 0, 0, 0.42),
+          1px -1px 0 rgba(0, 0, 0, 0.42),
+          -1px 1px 0 rgba(0, 0, 0, 0.42),
+          1px 1px 0 rgba(0, 0, 0, 0.42),
+          0 2px 0 rgba(0, 0, 0, 0.38);
       }
 
       html,
@@ -404,11 +425,6 @@ async function init() {
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", Arial, sans-serif;
-        background:
-          linear-gradient(rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.58)),
-          radial-gradient(circle at 20% 15%, rgba(62, 174, 188, 0.26), transparent 34%),
-          radial-gradient(circle at 82% 78%, rgba(8, 72, 103, 0.56), transparent 36%),
-          #05090d;
         color: var(--text);
       }
 
@@ -421,9 +437,9 @@ async function init() {
       }
 
       main {
-        width: min(680px, 100%);
+        width: min(720px, 100%);
         box-sizing: border-box;
-        padding: 34px 44px 36px;
+        padding: 38px 48px 40px;
         border: 5px solid var(--line);
         border-radius: 6px;
         background:
@@ -436,18 +452,18 @@ async function init() {
 
       form {
         margin: 0 auto;
-        max-width: 470px;
+        max-width: 520px;
       }
 
       form h2 {
         margin: 0 0 24px;
         color: var(--text);
-        font-size: 34px;
+        font-size: 36px;
         line-height: 1.2;
         font-weight: 800;
         letter-spacing: 0;
         text-align: center;
-        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.32);
+        text-shadow: var(--text-shadow-strong);
       }
 
       label {
@@ -467,15 +483,16 @@ async function init() {
       input {
         width: 100%;
         box-sizing: border-box;
-        min-height: 48px;
-        padding: 12px 16px;
+        min-height: 54px;
+        padding: 13px 18px;
         border: 2px solid var(--line);
         border-radius: 4px;
         background: var(--input);
         color: var(--text);
-        font-size: 16px;
-        font-weight: 700;
+        font-size: 17px;
+        font-weight: 800;
         outline: none;
+        text-shadow: var(--text-shadow-soft);
         transition:
           border-color 160ms ease,
           box-shadow 160ms ease,
@@ -483,7 +500,9 @@ async function init() {
       }
 
       input::placeholder {
-        color: rgba(255, 255, 255, 0.72);
+        color: rgba(255, 255, 255, 0.94);
+        opacity: 1;
+        text-shadow: var(--text-shadow-soft);
       }
 
       input:focus {
@@ -494,17 +513,17 @@ async function init() {
 
       button {
         width: 100%;
-        min-height: 46px;
+        min-height: 52px;
         margin-top: 8px;
-        padding: 11px 18px;
+        padding: 12px 18px;
         border: 0;
         border-radius: 4px;
         background: var(--button);
         color: var(--text);
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 800;
         cursor: pointer;
-        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.32);
+        text-shadow: var(--text-shadow-strong);
         box-shadow:
           0 3px 0 #08799a,
           0 0 0 2px rgba(255, 255, 255, 0.25) inset;
@@ -533,8 +552,9 @@ async function init() {
         gap: 10px;
         margin-top: 24px;
         color: var(--muted);
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
+        text-shadow: var(--text-shadow-soft);
       }
 
       .switcher a {
@@ -547,7 +567,7 @@ async function init() {
         font-weight: 800;
         text-align: center;
         text-decoration: none;
-        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
+        text-shadow: var(--text-shadow-strong);
         box-shadow:
           0 3px 0 #9c7f0c,
           0 0 0 2px rgba(255, 255, 255, 0.24) inset;
@@ -570,7 +590,7 @@ async function init() {
         }
 
         form h2 {
-          font-size: 28px;
+          font-size: 30px;
         }
 
         .switcher {
@@ -579,6 +599,50 @@ async function init() {
 
         .switcher a {
           width: 100%;
+        }
+      }
+
+      @media (max-height: 440px) {
+        body {
+          align-items: flex-start;
+          padding: 8px 12px;
+        }
+
+        main {
+          padding: 18px 36px 20px;
+          border-width: 4px;
+        }
+
+        form h2 {
+          margin-bottom: 14px;
+          font-size: 30px;
+        }
+
+        label {
+          margin-bottom: 10px;
+        }
+
+        input {
+          min-height: 48px;
+          padding: 10px 16px;
+          font-size: 16px;
+        }
+
+        button {
+          min-height: 46px;
+          margin-top: 4px;
+          padding: 10px 18px;
+          font-size: 16px;
+        }
+
+        .switcher {
+          flex-direction: row;
+          margin-top: 14px;
+        }
+
+        .switcher a {
+          width: auto;
+          padding: 8px 18px;
         }
       }
     </style>
@@ -633,7 +697,7 @@ async function init() {
       );
 
       if (options.redirectToDashboard)
-        return ctx.redirect(linkDashboardValidatePath(token));
+        return ctx.redirect(clientLoginValidatePath(token));
 
       return authSuccess(ctx, token);
     } catch (e) {
@@ -672,7 +736,7 @@ async function init() {
       jwt.verify(token, process.env.JWT_SECRET as string);
 
       if (!contentType.includes("application/json"))
-        return ctx.redirect(linkDashboardValidatePath(token));
+        return ctx.redirect(clientLoginValidatePath(token));
 
       return authSuccess(ctx, token);
     } catch (e) {
@@ -814,18 +878,28 @@ async function init() {
     try {
       const query = ctx.req.query();
       const contentType = ctx.req.header("content-type") ?? "";
-      let refreshToken: string | undefined =
-        query.refreshToken ?? query.token ?? query.valkey;
+      let refreshToken: string | undefined = firstString(
+        query.refreshToken,
+        query.token,
+        query.ltoken,
+        query.LToken,
+        query.valkey,
+      );
 
       if (!refreshToken && contentType.includes("application/json")) {
         const body = await ctx.req.json();
-        refreshToken =
-          body.refreshToken ??
-          body.token ??
-          body.valkey ??
-          body.data?.refreshToken ??
-          body.data?.token ??
-          body.data?.valkey;
+        refreshToken = firstString(
+          body.refreshToken,
+          body.token,
+          body.ltoken,
+          body.LToken,
+          body.valkey,
+          body.data?.refreshToken,
+          body.data?.token,
+          body.data?.ltoken,
+          body.data?.LToken,
+          body.data?.valkey,
+        );
       }
 
       if (
@@ -835,10 +909,13 @@ async function init() {
           contentType.includes("multipart/form-data"))
       ) {
         const formData = (await ctx.req.formData()) as FormData;
-        refreshToken =
-          formData.get("refreshToken")?.toString() ??
-          formData.get("token")?.toString() ??
-          formData.get("valkey")?.toString();
+        refreshToken = firstString(
+          formData.get("refreshToken")?.toString(),
+          formData.get("token")?.toString(),
+          formData.get("ltoken")?.toString(),
+          formData.get("LToken")?.toString(),
+          formData.get("valkey")?.toString(),
+        );
       }
 
       if (!refreshToken)
@@ -847,7 +924,7 @@ async function init() {
       const token = refreshToken;
       jwt.verify(token, process.env.JWT_SECRET as string);
 
-      return ctx.redirect(linkDashboardValidatePath(token));
+      return ctx.redirect(clientLoginValidatePath(token));
     } catch (e) {
       return authError(
         ctx,
@@ -859,19 +936,28 @@ async function init() {
 
   const validateDashboardToken = (ctx: Context) => {
     try {
-      const token =
-        ctx.req.param("token") ??
-        decodeURIComponent(
-          ctx.req.path
-            .slice("/player/link/dashboard/validate/".length)
-            .split("/")[0] ?? "",
-        );
+      const prefix = "/player/link/dashboard/validate/";
+      const pathToken = ctx.req.path.startsWith(prefix)
+        ? decodeURIComponent(
+            ctx.req.path.slice(prefix.length).split("/")[0] ?? "",
+          )
+        : "";
+      const token = firstString(
+        ctx.req.query("token"),
+        ctx.req.query("ltoken"),
+        ctx.req.query("LToken"),
+        ctx.req.query("refreshToken"),
+        ctx.req.query("valkey"),
+        pathToken,
+        ctx.req.param("token"),
+      );
+
       if (!token) throw new Error("No token provided");
 
       jwt.verify(token, process.env.JWT_SECRET as string);
       writeWebLoginToken(token);
 
-      return authSuccess(ctx, token);
+      return ctx.redirect(clientLoginValidatePath(token));
     } catch (e) {
       return authError(ctx, "Please try login again.", e);
     }
@@ -890,8 +976,16 @@ async function init() {
 
   const serverData = (ctx: Context) => {
     let str = "";
+    const requestHost = new URL(ctx.req.url).hostname;
+    const configuredAddress = config.web.address;
+    const serverAddress =
+      ["127.0.0.1", "localhost", "::1"].includes(configuredAddress) &&
+      requestHost &&
+      !["127.0.0.1", "localhost", "::1"].includes(requestHost)
+        ? requestHost
+        : configuredAddress;
 
-    str += `server|${config.web.address}\n`;
+    str += `server|${serverAddress}\n`;
 
     const randPort =
       config.web.ports[Math.floor(Math.random() * config.web.ports.length)];
@@ -926,10 +1020,17 @@ async function init() {
   });
 
   app.get("/player/growid/login/validate", (ctx) => {
-    const token = ctx.req.query("token");
-    if (!token) return ctx.redirect("/player/login/dashboard");
+    try {
+      const token = ctx.req.query("token");
+      if (!token) throw new Error("No token provided");
 
-    return ctx.redirect(linkDashboardValidatePath(token));
+      jwt.verify(token, process.env.JWT_SECRET as string);
+      writeWebLoginToken(token);
+
+      return authSuccess(ctx, token);
+    } catch (e) {
+      return authError(ctx, "No login token provided.", e);
+    }
   });
   app.post("/player/login/validate", (ctx) => validateGrowId(ctx));
   app.post("/player/growid/login/validate", (ctx) =>

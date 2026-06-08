@@ -12,7 +12,7 @@ export interface WebLoginToken {
   createdAt: number;
 }
 
-const TOKEN_MAX_AGE_MS = 60_000;
+const TOKEN_MAX_AGE_MS = 180_000;
 
 function tokenPath() {
   return join(resolve(process.cwd(), "..", "..", ".cache"), "web-login.json");
