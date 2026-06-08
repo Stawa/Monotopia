@@ -134,11 +134,13 @@ export class World {
     if (!this.base.cache.worlds.has(this.worldName)) {
       const world = await this.base.database.worlds.get(this.worldName);
       if (world) {
+        const blocks = world.blocks ? JSON.parse(world.blocks.toString()) : [];
+
         this.data = {
           name:        world.name,
           width:       world.width,
           height:      world.height,
-          blocks:      world.blocks ? JSON.parse(world.blocks.toString()) : [],
+          blocks,
           // admins: [],
           playerCount: 0,
           jammers:     [],
@@ -147,11 +149,10 @@ export class World {
             : { uid: 0, items: [] },
           // owner: world.owner ? JSON.parse(world.owner.toString()) : null,
           weather: { id: world.weather_id || 41 },
-          worldLockIndex:
-            world.worldlock_index !== null &&
-            world.worldlock_index !== undefined
-              ? world.worldlock_index
-              : undefined,
+          worldLockIndex: this.resolveWorldLockIndex(
+            blocks,
+            world.worldlock_index,
+          ),
           // minLevel: world.minimum_level || 1,
         };
       } else {
@@ -681,8 +682,9 @@ export class World {
           );
         }
       }
-    } else if (this.data.worldLockIndex !== undefined) {
-      const worldLock = this.data.blocks[this.data.worldLockIndex];
+    } else {
+      const worldLock = this.getWorldLockTile();
+      if (!worldLock?.lock) return true;
 
       if (worldLock.flags & TileFlags.PUBLIC) return true;
       else if (
@@ -693,9 +695,6 @@ export class World {
       } else if (worldLock.lock!.ownerUserID == userID) {
         return true;
       }
-    } else {
-      // no locks and no owner
-      return true;
     }
 
     return permissionType == LockPermission.NONE || false;
@@ -738,8 +737,10 @@ export class World {
   }
 
   public getWorldLockTile(): TileData | undefined {
-    if (this.data.worldLockIndex === undefined) return undefined;
-    return this.data.blocks[this.data.worldLockIndex];
+    const worldLockIndex = this.refreshWorldLockIndex();
+    if (worldLockIndex === undefined) return undefined;
+
+    return this.data.blocks[worldLockIndex];
   }
 
   public getOwnerUID(): number | undefined {
@@ -972,12 +973,42 @@ export class World {
     // the tile being asked is the lock itself. No one have permission except the owner
     else if (tile.lock) {
       return tile.lock.ownerUserID;
-    } else if (this.data.worldLockIndex !== undefined) {
-      const worldLock = this.data.blocks[this.data.worldLockIndex];
-      return worldLock.lock?.ownerUserID;
-    } else {
-      // no locks and no owner
-      return undefined;
     }
+
+    const worldLock = this.getWorldLockTile();
+    return worldLock?.lock?.ownerUserID;
+  }
+
+  private refreshWorldLockIndex(): number | undefined {
+    const worldLockIndex = this.resolveWorldLockIndex(
+      this.data.blocks,
+      this.data.worldLockIndex,
+    );
+
+    this.data.worldLockIndex = worldLockIndex;
+
+    return worldLockIndex;
+  }
+
+  private resolveWorldLockIndex(
+    blocks: TileData[],
+    currentIndex?: number | null,
+  ): number | undefined {
+    if (
+      typeof currentIndex === "number" &&
+      this.isWorldLockBlock(blocks[currentIndex])
+    ) {
+      return currentIndex;
+    }
+
+    const worldLockIndex = blocks.findIndex((block) =>
+      this.isWorldLockBlock(block),
+    );
+
+    return worldLockIndex >= 0 ? worldLockIndex : undefined;
+  }
+
+  private isWorldLockBlock(block?: TileData): boolean {
+    return !!block?.lock && !!block.worldLockData;
   }
 }

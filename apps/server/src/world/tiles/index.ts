@@ -15,6 +15,7 @@ import { WeatherTile } from "./WeatherTile";
 import { DiceTile } from "./DiceTile";
 import { SeedTile } from "./SeedTile";
 import { VendingMachineTile } from "./VendingMachineTile";
+import { StatsBlockTile } from "./StatsBlockTile";
 import { ExtendBuffer } from "@growserver/utils";
 import { TankPacket } from "growtopia.js";
 import logger from "@growserver/logger";
@@ -31,6 +32,7 @@ const TileMap: Record<number, Class<Tile>> = {
   [ActionTypes.WEATHER_MACHINE]: WeatherTile,
   [ActionTypes.DICE]:            DiceTile,
   [ActionTypes.VENDING_MACHINE]: VendingMachineTile,
+  [ActionTypes.STATS_BLOCK]:     StatsBlockTile,
   [ActionTypes.BACKGROUND]:      NormalTile,
   [ActionTypes.FOREGROUND]:      NormalTile,
   [ActionTypes.SEED]:            SeedTile,

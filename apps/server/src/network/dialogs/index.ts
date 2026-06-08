@@ -16,6 +16,7 @@ import { GatewayEdit } from "./GatewayEdit";
 import { WorldCategoryEdit } from "./WorldCategoryEdit";
 import { WorldTimerEdit } from "./WorldTimerEdit";
 import { FriendsMenu } from "./FriendsMenu";
+import { GrowScan } from "./GrowScan";
 
 export const DialogMap: Record<
   string,
@@ -39,5 +40,6 @@ export const DialogMap: Record<
   ["world_category_edit"]:  WorldCategoryEdit,
   ["world_timer_edit"]:     WorldTimerEdit,
   ["friends_menu"]:         FriendsMenu,
+  ["growscan"]:             GrowScan,
   ["on_use_door_tutorial"]: UseDoorTutorial,
 };

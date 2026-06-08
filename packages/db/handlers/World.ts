@@ -6,6 +6,24 @@ import { WorldData } from "@growserver/types";
 export class WorldDB {
   constructor(private db: PostgresJsDatabase<Record<string, never>>) {}
 
+  private getWorldLockIndex(data: WorldData): number | undefined {
+    const index = data.worldLockIndex;
+
+    if (
+      index !== undefined &&
+      data.blocks[index]?.lock &&
+      data.blocks[index]?.worldLockData
+    ) {
+      return index;
+    }
+
+    const foundIndex = data.blocks.findIndex(
+      (block) => !!block.lock && !!block.worldLockData,
+    );
+
+    return foundIndex >= 0 ? foundIndex : undefined;
+  }
+
   public async get(name: string) {
     const res = await this.db
       .select()
@@ -32,9 +50,9 @@ export class WorldDB {
   public async set(data: WorldData) {
     if (!data.name && !data.blocks && !data.width && !data.height) return 0;
 
-    const worldLockData = data.worldLockIndex !== undefined
-      ? data.blocks[data.worldLockIndex].lock
-      : null;
+    const worldLockIndex = this.getWorldLockIndex(data);
+    const worldLockData =
+      worldLockIndex !== undefined ? data.blocks[worldLockIndex].lock : null;
 
     const res = await this.db
       .insert(worlds)
@@ -48,7 +66,7 @@ export class WorldDB {
         dropped: JSON.stringify(data.dropped),
         updated_at: new Date().toISOString().slice(0, 19).replace("T", " "),
         weather_id: data.weather.id,
-        worldlock_index: data.worldLockIndex,
+        worldlock_index: worldLockIndex ?? null,
         // minimum_level: data.minLevel
       })
       .returning({ id: worlds.id });
@@ -60,9 +78,9 @@ export class WorldDB {
   public async save(data: WorldData) {
     if (!data.name && !data.blocks && !data.width && !data.height) return false;
 
-    const worldLockData = data.worldLockIndex !== undefined
-      ? data.blocks[data.worldLockIndex].lock
-      : null;
+    const worldLockIndex = this.getWorldLockIndex(data);
+    const worldLockData =
+      worldLockIndex !== undefined ? data.blocks[worldLockIndex].lock : null;
 
     const res = await this.db
       .update(worlds)
@@ -75,6 +93,7 @@ export class WorldDB {
         dropped: JSON.stringify(data.dropped),
         updated_at: new Date().toISOString().slice(0, 19).replace("T", " "),
         weather_id: data.weather.id,
+        worldlock_index: worldLockIndex ?? null,
         // minimum_level: data.minLevel
       })
       .where(eq(worlds.name, data.name))

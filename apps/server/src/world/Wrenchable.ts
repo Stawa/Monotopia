@@ -14,6 +14,7 @@ const WRENCHABLE_TILE_TYPES = new Set<number>([
   ActionTypes.DICE,
   ActionTypes.DISPLAY_BLOCK,
   ActionTypes.VENDING_MACHINE,
+  ActionTypes.STATS_BLOCK,
   ActionTypes.VIP_ENTRANCE,
   ActionTypes.RED_FACTION,
   ActionTypes.GREEN_FACTION,
