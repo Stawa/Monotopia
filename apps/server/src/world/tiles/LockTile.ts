@@ -264,14 +264,8 @@ export class LockTile extends Tile {
           3,
         )
         .addSmallText("Set minimum world entry level")
-        .addButton(
-          "session_length",
-          `World Timer: ${this.getTimerLabel()}`,
-        )
-        .addButton(
-          "set_category",
-          `Category: ${this.getCategoryLabel()}`,
-        );
+        .addButton("session_length", `World Timer: ${this.getTimerLabel()}`)
+        .addButton("set_category", `Category: ${this.getCategoryLabel()}`);
 
       if (this.data.fg === ITEM_ROYAL_LOCK) {
         dialog
@@ -280,16 +274,12 @@ export class LockTile extends Tile {
           .addCheckbox(
             "royal_silence",
             '"SILENCE, Peasants"',
-            this.data.worldLockData.royalSilence
-              ? "selected"
-              : "not_selected",
+            this.data.worldLockData.royalSilence ? "selected" : "not_selected",
           )
           .addCheckbox(
             "royal_rainbows",
             '"Rainbows For The King"',
-            this.data.worldLockData.royalRainbows
-              ? "selected"
-              : "not_selected",
+            this.data.worldLockData.royalRainbows ? "selected" : "not_selected",
           )
           .addSmallText(
             "Peasant Radar is always active for players with access.",

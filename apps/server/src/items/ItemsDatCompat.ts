@@ -117,11 +117,7 @@ function readItem(buffer: ItemsBuffer, version = 0): ItemDefinition {
   return item;
 }
 
-function readString(
-  buffer: ItemsBuffer,
-  itemID = 0,
-  encoded = false,
-): string {
+function readString(buffer: ItemsBuffer, itemID = 0, encoded = false): string {
   const length = buffer.readI16();
   const chars: string[] = [];
 
@@ -131,7 +127,8 @@ function readString(
     chars.push(
       String.fromCharCode(
         encoded
-          ? charCode ^ ITEMS_DAT_KEY.charCodeAt((itemID + index) % ITEMS_DAT_KEY.length)
+          ? charCode ^
+              ITEMS_DAT_KEY.charCodeAt((itemID + index) % ITEMS_DAT_KEY.length)
           : charCode,
       ),
     );

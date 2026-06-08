@@ -83,7 +83,9 @@ export default class Stats extends Command {
       .addSpacer("small")
       .addLabelWithIcon("`wRuntime``", "32", "small")
       .addSmallText(`Server version: \`w${this.base.package.version}\`\``)
-      .addSmallText(`Growtopia version: \`w${this.base.cdn.version || "Unknown"}\`\``)
+      .addSmallText(
+        `Growtopia version: \`w${this.base.cdn.version || "Unknown"}\`\``,
+      )
       .addSmallText(`Node.js: \`w${process.version}\`\``)
       .addSmallText(`Uptime: \`w${formatDuration(process.uptime())}\`\``)
       .addSpacer("small")
@@ -96,7 +98,9 @@ export default class Stats extends Command {
       .addSpacer("small")
       .addLabelWithIcon("`wData``", "112", "small")
       .addSmallText(`Items loaded: \`w${itemCount}\`\``)
-      .addSmallText(`Items.dat: \`w${this.base.cdn.itemsDatName || "Unknown"}\`\``)
+      .addSmallText(
+        `Items.dat: \`w${this.base.cdn.itemsDatName || "Unknown"}\`\``,
+      )
       .addSpacer("small")
       .addLabelWithIcon("`wMemory``", "112", "small")
       .addSmallText(`RSS: \`w${formatBytes(memory.rss)}\`\``)

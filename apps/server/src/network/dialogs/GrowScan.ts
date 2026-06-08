@@ -14,28 +14,28 @@ const MAX_QUERY_LENGTH = 40;
 const MAX_STORED_LOCATIONS = 8;
 
 const BLOCK_FILTER_LABELS = {
-  all: "All",
-  foreground: "Blocks",
-  background: "Backgrounds",
+  all:         "All",
+  foreground:  "Blocks",
+  background:  "Backgrounds",
   untradeable: "Untradeable",
 } as const;
 
 const ITEM_FILTER_LABELS = {
-  all: "All",
-  clothes: "Clothes",
+  all:         "All",
+  clothes:     "Clothes",
   consumables: "Consumables",
-  blocks: "Blocks",
-  seeds: "Seeds",
-  locks: "Locks",
-  other: "Other",
+  blocks:      "Blocks",
+  seeds:       "Seeds",
+  locks:       "Locks",
+  other:       "Other",
 } as const;
 
 const CHI_LABELS = {
   earth: "Earth",
-  wind: "Wind",
-  fire: "Fire",
+  wind:  "Wind",
+  fire:  "Fire",
   water: "Water",
-  none: "None",
+  none:  "None",
 } as const;
 
 const FLOATING_BLOCK_TYPES = new Set<number>([
@@ -268,13 +268,13 @@ function scanWorldBlocks(base: Base, world: World): ScanEntry[] {
 
   for (const block of world.data.blocks) {
     addBlockEntry(base, entries, chiByID, block.fg, {
-      x: block.x,
-      y: block.y,
+      x:     block.x,
+      y:     block.y,
       layer: "foreground",
     });
     addBlockEntry(base, entries, chiByID, block.bg, {
-      x: block.x,
-      y: block.y,
+      x:     block.x,
+      y:     block.y,
       layer: "background",
     });
   }
@@ -297,9 +297,9 @@ function scanFloatingItems(base: Base, world: World): ScanEntry[] {
     entry.locationCount += 1;
     if (entry.locations.length < MAX_STORED_LOCATIONS) {
       entry.locations.push({
-        x: dropped.block?.x ?? Math.floor(dropped.x / 32),
-        y: dropped.block?.y ?? Math.floor(dropped.y / 32),
-        layer: "floating",
+        x:      dropped.block?.x ?? Math.floor(dropped.x / 32),
+        y:      dropped.block?.y ?? Math.floor(dropped.y / 32),
+        layer:  "floating",
         amount: dropped.amount,
       });
     }
@@ -342,19 +342,19 @@ function getOrCreateEntry(
   if (!item) return undefined;
 
   const entry: ScanEntry = {
-    id: itemID,
+    id:            itemID,
     item,
-    name: item.name ?? `Item ${itemID}`,
-    count: 0,
-    foreground: 0,
-    background: 0,
-    stackCount: 0,
+    name:          item.name ?? `Item ${itemID}`,
+    count:         0,
+    foreground:    0,
+    background:    0,
+    stackCount:    0,
     locationCount: 0,
-    rarity: normalizeRarity(item),
-    superRare: isSuperRare(item),
-    untradeable: !!((item.flags ?? 0) & BlockFlags.UNTRADEABLE),
-    chi: chiByID.get(itemID) ?? "none",
-    locations: [],
+    rarity:        normalizeRarity(item),
+    superRare:     isSuperRare(item),
+    untradeable:   !!((item.flags ?? 0) & BlockFlags.UNTRADEABLE),
+    chi:           chiByID.get(itemID) ?? "none",
+    locations:     [],
   };
 
   entries.set(itemID, entry);
@@ -364,12 +364,12 @@ function getOrCreateEntry(
 function getBlockStats(entries: ScanEntry[]): BlockStats {
   const chi = new Map<Chi, number>();
   const stats: BlockStats = {
-    blocks: 0,
+    blocks:      0,
     backgrounds: 0,
     untradeable: 0,
-    superRare: 0,
+    superRare:   0,
     totalRarity: 0,
-    unique: entries.length,
+    unique:      entries.length,
     chi,
   };
 
@@ -387,12 +387,12 @@ function getBlockStats(entries: ScanEntry[]): BlockStats {
 
 function getFloatingStats(entries: ScanEntry[]): FloatingStats {
   const stats: FloatingStats = {
-    stacks: 0,
-    amount: 0,
-    gems: 0,
-    superRare: 0,
+    stacks:      0,
+    amount:      0,
+    gems:        0,
+    superRare:   0,
     totalRarity: 0,
-    unique: entries.length,
+    unique:      entries.length,
   };
 
   for (const entry of entries) {
@@ -511,10 +511,10 @@ function cloneEntryForLayer(
   return {
     ...entry,
     count,
-    foreground: layer === "foreground" ? count : 0,
-    background: layer === "background" ? count : 0,
+    foreground:    layer === "foreground" ? count : 0,
+    background:    layer === "background" ? count : 0,
     locationCount: count,
-    locations: entry.locations.filter((location) => location.layer === layer),
+    locations:     entry.locations.filter((location) => location.layer === layer),
   };
 }
 
@@ -555,8 +555,8 @@ function sendLocationHint(
   const suffix =
     extraLocations > 0
       ? ` and \`w${formatNumber(extraLocations)}\`\` more spot${
-          extraLocations === 1 ? "" : "s"
-        }`
+        extraLocations === 1 ? "" : "s"
+      }`
       : "";
   const amount =
     location.layer === "floating" && location.amount

@@ -9,6 +9,7 @@
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "fix:lint": "pnpm lint:fix",
+    "fix": "pnpm format && pnpm lint:fix",
     "give:role": "pnpm --filter server give:role",
     "reset:world": "pnpm --filter server reset:world",
     "setup": "turbo run setup",

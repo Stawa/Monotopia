@@ -35,8 +35,12 @@ export default class News extends Command {
       )
       .addTextBox("Welcome to Monotopia.")
       .addSmallText("`2New commands: `w/status, /stats, /who, /news``")
-      .addSmallText("`2Item effects: `wMore wearable effects now use wiki-backed data.``")
-      .addSmallText("`2Tip: `wUse /help to see commands available to your role.``")
+      .addSmallText(
+        "`2Item effects: `wMore wearable effects now use wiki-backed data.``",
+      )
+      .addSmallText(
+        "`2Tip: `wUse /help to see commands available to your role.``",
+      )
       .addSmallText(
         `Online now: \`w${this.base.getPlayersOnline()}\`\` players.`,
       )

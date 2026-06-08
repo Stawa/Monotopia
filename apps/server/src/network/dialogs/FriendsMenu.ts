@@ -69,7 +69,10 @@ export class FriendsMenu {
 
     if (buttonClicked === "remove_selected") {
       const message = await this.removeSelectedFriends();
-      await this.sendEditFriendsDialog(this.getTargetPage(buttonClicked), message);
+      await this.sendEditFriendsDialog(
+        this.getTargetPage(buttonClicked),
+        message,
+      );
       return;
     }
 
@@ -81,7 +84,9 @@ export class FriendsMenu {
       buttonClicked === "trade_history" ||
       buttonClicked === "community_hub"
     ) {
-      await this.sendSocialPortalDialog("`oThat section is not available yet.``");
+      await this.sendSocialPortalDialog(
+        "`oThat section is not available yet.``",
+      );
       return;
     }
 
@@ -218,7 +223,9 @@ export class FriendsMenu {
       });
     }
 
-    dialog.addSpacer("small").addTextBox("`oYou aren't currently ignoring anyone.``");
+    dialog
+      .addSpacer("small")
+      .addTextBox("`oYou aren't currently ignoring anyone.``");
 
     if (maxPage > 0) {
       dialog.addSpacer("small");
@@ -280,8 +287,7 @@ export class FriendsMenu {
     if (maxPage > 0) {
       dialog.addSpacer("small");
       if (currentPage > 0) dialog.addButton("edit_page_prev", "`wPrevious``");
-      if (currentPage < maxPage)
-        dialog.addButton("edit_page_next", "`wNext``");
+      if (currentPage < maxPage) dialog.addButton("edit_page_next", "`wNext``");
     }
 
     dialog
@@ -391,7 +397,9 @@ export class FriendsMenu {
           id:          player.id,
           name:        player.name,
           displayName: player.display_name,
-          daysOffline: this.getDaysSince(player.updated_at ?? player.created_at),
+          daysOffline: this.getDaysSince(
+            player.updated_at ?? player.created_at,
+          ),
         };
       }),
     );
@@ -449,7 +457,9 @@ export class FriendsMenu {
 
   private getSelectedFriendIDs(): number[] {
     return Object.entries(this.action)
-      .filter(([key, value]) => key.startsWith("selected_friend_") && value === "1")
+      .filter(
+        ([key, value]) => key.startsWith("selected_friend_") && value === "1",
+      )
       .map(([key]) => Number.parseInt(key.slice("selected_friend_".length), 10))
       .filter((id) => Number.isInteger(id));
   }

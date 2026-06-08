@@ -51,7 +51,10 @@ export class SearchItem {
     const showSeeds = this.shouldShowSeeds();
     const amount = this.getAmount();
     const results = this.searchItems(query, showSeeds);
-    const maxPage = Math.max(0, Math.ceil(results.length / RESULTS_PER_PAGE) - 1);
+    const maxPage = Math.max(
+      0,
+      Math.ceil(results.length / RESULTS_PER_PAGE) - 1,
+    );
     const currentPage = Math.min(maxPage, Math.max(0, page));
     const pageResults = results.slice(
       currentPage * RESULTS_PER_PAGE,

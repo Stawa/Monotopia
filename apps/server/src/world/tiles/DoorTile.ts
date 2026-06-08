@@ -32,8 +32,8 @@ export class DoorTile extends Tile {
     this.data.flags |= TileFlags.TILEEXTRA | TileFlags.PUBLIC;
     this.data.door = {
       destination: "",
-      id: "",
-      label: "",
+      id:          "",
+      label:       "",
     };
 
     return true;
@@ -47,8 +47,8 @@ export class DoorTile extends Tile {
   private getDoorData() {
     this.data.door ??= {
       destination: "",
-      id: "",
-      label: "",
+      id:          "",
+      label:       "",
     };
 
     return this.data.door;

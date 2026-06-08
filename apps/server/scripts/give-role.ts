@@ -57,7 +57,7 @@ const main = async () => {
     .set({
       role,
       display_name: displayName,
-      updated_at:   new Date().toISOString().slice(0, 19).replace("T", " "),
+      updated_at: new Date().toISOString().slice(0, 19).replace("T", " "),
     })
     .where(eq(players.id, player.id));
 

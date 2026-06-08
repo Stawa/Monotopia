@@ -148,7 +148,7 @@ export class World {
             ? JSON.parse(world.dropped.toString())
             : { uid: 0, items: [] },
           // owner: world.owner ? JSON.parse(world.owner.toString()) : null,
-          weather: { id: world.weather_id || 41 },
+          weather:        { id: world.weather_id || 41 },
           worldLockIndex: this.resolveWorldLockIndex(
             blocks,
             world.worldlock_index,
@@ -264,9 +264,8 @@ export class World {
         // const blockBuf = new Tile(this.base, this, block).serialize(item?.type as number);
         // const type = item?.type as number;
         // const blockBuf = await tileParse(type, this.base, this, block);
-        const blockBuf = (
-          await tileFrom(this.base, this, visibleBlock).parse()
-        ).data;
+        const blockBuf = (await tileFrom(this.base, this, visibleBlock).parse())
+          .data;
 
         blockBuf.forEach((b) => blockBytes.push(b));
       }
@@ -756,8 +755,7 @@ export class World {
     if (!lock?.lock || !lock.worldLockData) return false;
 
     return (
-      lock.lock.ownerUserID === userID ||
-      !!lock.lock.adminIDs?.includes(userID)
+      lock.lock.ownerUserID === userID || !!lock.lock.adminIDs?.includes(userID)
     );
   }
 

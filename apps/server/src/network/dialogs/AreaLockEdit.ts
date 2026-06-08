@@ -112,7 +112,10 @@ export class AreaLockEdit {
         this.peer.data.homeWorld === this.world.worldName,
       );
 
-      if (homeWorldSelected && this.peer.data.homeWorld !== this.world.worldName) {
+      if (
+        homeWorldSelected &&
+        this.peer.data.homeWorld !== this.world.worldName
+      ) {
         this.peer.data.homeWorld = this.world.worldName;
         homeWorldChanged = true;
         this.peer.sendConsoleMessage(
@@ -319,9 +322,7 @@ export class AreaLockEdit {
     const dialog = new DialogBuilder()
       .defaultColor()
       .addLabelWithIcon("`wWorld Category``", this.block.fg, "big")
-      .addSmallText(
-        "Pick the category that best describes this world.",
-      )
+      .addSmallText("Pick the category that best describes this world.")
       .addSmallText(`Current category: \`w${currentCategory}\`\``)
       .embed("tilex", this.block.x)
       .embed("tiley", this.block.y);

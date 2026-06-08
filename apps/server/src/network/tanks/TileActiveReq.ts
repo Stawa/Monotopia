@@ -29,21 +29,23 @@ export class TileActiveReq {
 
     if (!(await this.canUseDoor(this.block))) return;
 
-    const [rawWorldName, rawDoorID] = (
-      this.block.door.destination ?? ""
-    ).split(":");
+    const [rawWorldName, rawDoorID] = (this.block.door.destination ?? "").split(
+      ":",
+    );
     const worldName = this.normalize(rawWorldName || this.peer.data.world);
     const id = this.normalize(rawDoorID);
 
     if (!worldName || worldName === "EXIT") return this.peer.leaveWorld();
 
     if (worldName === this.normalize(this.peer.data.world)) {
-      const door = this.findDoorByID(this.world, id) ?? this.findMainDoor(
-        this.world,
-      );
+      const door =
+        this.findDoorByID(this.world, id) ?? this.findMainDoor(this.world);
 
       if (!door) {
-        this.peer.sendTextBubble("That destination door couldn't be found.", true);
+        this.peer.sendTextBubble(
+          "That destination door couldn't be found.",
+          true,
+        );
         return;
       }
 
@@ -59,7 +61,10 @@ export class TileActiveReq {
       this.findMainDoor(destinationWorld);
 
     if (!door) {
-      this.peer.sendTextBubble("That destination world has no usable door.", true);
+      this.peer.sendTextBubble(
+        "That destination world has no usable door.",
+        true,
+      );
       return;
     }
 

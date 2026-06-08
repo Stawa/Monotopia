@@ -101,7 +101,10 @@ export class Tile {
     peer: Peer,
     itemMeta: ItemDefinition,
   ): Promise<boolean> {
-    if (itemMeta.type === ActionTypes.SHEET_MUSIC && !this.world.getOwnerUID()) {
+    if (
+      itemMeta.type === ActionTypes.SHEET_MUSIC &&
+      !this.world.getOwnerUID()
+    ) {
       peer.sendTextBubble(
         "Sheet Music can only be placed in World Locked worlds.",
         false,

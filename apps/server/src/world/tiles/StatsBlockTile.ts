@@ -43,7 +43,7 @@ export class StatsBlockTile extends Tile {
     }
 
     sendGrowScanDialog(this.base, peer, {
-      mode: "blocks",
+      mode:  "blocks",
       tileX: this.data.x,
       tileY: this.data.y,
     });

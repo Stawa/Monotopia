@@ -41,7 +41,8 @@ export function isWrenchableTile(
   }
 
   const meta =
-    itemMeta ?? base.items.metadata.items.get((tileData.fg || tileData.bg).toString());
+    itemMeta ??
+    base.items.metadata.items.get((tileData.fg || tileData.bg).toString());
 
   if (!meta) return false;
   if ((meta.flags ?? 0) & BlockFlags.WRENCHABLE) return true;

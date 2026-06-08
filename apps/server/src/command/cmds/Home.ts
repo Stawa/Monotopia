@@ -39,13 +39,19 @@ export default class Home extends Command {
 
     if (this.peer.data.world === homeWorld) {
       this.peer.send(
-        Variant.from("OnConsoleMessage", "`oYou're already in your Home World."),
+        Variant.from(
+          "OnConsoleMessage",
+          "`oYou're already in your Home World.",
+        ),
       );
       return;
     }
 
     this.peer.send(
-      Variant.from("OnConsoleMessage", `Warping home to \`2${homeWorld}\`\`...`),
+      Variant.from(
+        "OnConsoleMessage",
+        `Warping home to \`2${homeWorld}\`\`...`,
+      ),
     );
 
     if (this.peer.data.world !== "EXIT") {

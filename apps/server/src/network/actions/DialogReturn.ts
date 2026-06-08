@@ -32,9 +32,7 @@ export class DialogReturn {
       const Class = DialogMap[dialogName];
 
       if (!Class)
-        throw new Error(
-          `No Dialog class found with dialog name ${dialogName}`,
-        );
+        throw new Error(`No Dialog class found with dialog name ${dialogName}`);
 
       const dialog = new Class(this.base, this.peer, action);
       await dialog.execute();
