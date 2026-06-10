@@ -1,6 +1,6 @@
 import { Base } from "../core/Base";
 import { Peer } from "../core/Peer";
-import type { CommandOptions } from "@growserver/types";
+import type { CommandOptions } from "@monotopia/types";
 
 export class Command {
   public opt: CommandOptions;

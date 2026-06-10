@@ -1,10 +1,10 @@
 import { Command } from "../Command";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { getRoleName, hasRolePermission, ROLE } from "@growserver/const";
+import { getRoleName, hasRolePermission, ROLE } from "@monotopia/const";
 import { Variant } from "growtopia.js";
 import { CommandMap } from ".";
-import { DialogBuilder } from "@growserver/utils";
+import { DialogBuilder } from "@monotopia/utils";
 
 export default class Help extends Command {
   constructor(base: Base, peer: Peer, text: string, args: string[]) {

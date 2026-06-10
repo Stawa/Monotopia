@@ -10,14 +10,14 @@ import {
   ROLE,
   TileFlags,
   WORLD_CATEGORIES,
-} from "@growserver/const";
-import { TileData } from "@growserver/types";
+} from "@monotopia/const";
+import { TileData } from "@monotopia/types";
 import { Floodfill } from "../../world/FloodFill";
 import { World } from "../../core/World";
 import { Tile } from "../../world/Tile";
 import { ItemDefinition } from "grow-items";
 import { tileFrom } from "../../world/tiles";
-import { DialogBuilder } from "@growserver/utils";
+import { DialogBuilder } from "@monotopia/utils";
 
 export class AreaLockEdit {
   private world: World;

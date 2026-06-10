@@ -1,9 +1,9 @@
 import { type NonEmptyObject } from "type-fest";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { DialogBuilder, getCurrentTimeInSeconds } from "@growserver/utils";
+import { DialogBuilder, getCurrentTimeInSeconds } from "@monotopia/utils";
 import { Variant } from "growtopia.js";
-import { ActionTypes } from "@growserver/const";
+import { ActionTypes } from "@monotopia/const";
 
 type TabConfig = {
   id: string;

@@ -2,8 +2,8 @@ import { TankPacket, Variant } from "growtopia.js";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { World } from "../../core/World";
-import { TileData } from "@growserver/types";
-import { LockPermission, TileFlags } from "@growserver/const";
+import { TileData } from "@monotopia/types";
+import { LockPermission, TileFlags } from "@monotopia/const";
 
 export class TileActiveReq {
   private pos: number;

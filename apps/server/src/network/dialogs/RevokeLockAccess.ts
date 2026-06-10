@@ -6,8 +6,8 @@ import {
   LockPermission,
   LOCKS,
   TileFlags,
-} from "@growserver/const";
-import { TileData } from "@growserver/types";
+} from "@monotopia/const";
+import { TileData } from "@monotopia/types";
 import { Floodfill } from "../../world/FloodFill";
 import { World } from "../../core/World";
 import { Tile } from "../../world/Tile";

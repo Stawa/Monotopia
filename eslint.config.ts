@@ -1,6 +1,6 @@
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
-import stylisticTs from "@stylistic/eslint-plugin-ts";
+import stylistic from "@stylistic/eslint-plugin";
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -8,7 +8,7 @@ export default tseslint.config(
   {
     ignores: ["node_modules/*", "dist/*", "build/*", "data/*", "scripts/*"],
     plugins: {
-      "@stylistic/ts": stylisticTs,
+      "@stylistic": stylistic,
     },
     rules: {
       indent: "off",
@@ -21,7 +21,7 @@ export default tseslint.config(
         },
       ],
       "@typescript-eslint/no-unused-vars": "off",
-      "@stylistic/ts/indent": [
+      "@stylistic/indent": [
         "error",
         2,
         {

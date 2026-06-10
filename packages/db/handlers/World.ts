@@ -1,7 +1,7 @@
 import { type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { eq, sql } from "drizzle-orm";
 import { worlds } from "../shared/schemas/World";
-import { WorldData } from "@growserver/types";
+import { WorldData } from "@monotopia/types";
 
 export class WorldDB {
   constructor(private db: PostgresJsDatabase<Record<string, never>>) {}

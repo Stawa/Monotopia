@@ -1,10 +1,10 @@
 import { Peer } from "../core/Peer";
 import { Base } from "../core/Base";
 import { TankPacket } from "growtopia.js";
-import { TankTypes } from "@growserver/const";
+import { TankTypes } from "@monotopia/const";
 import { World } from "../core/World";
 import { TankMap } from "./tanks/index";
-import logger from "@growserver/logger";
+import logger from "@monotopia/logger";
 
 export class ITankPacket {
   public tank;

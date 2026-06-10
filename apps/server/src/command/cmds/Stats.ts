@@ -1,9 +1,9 @@
 import { Command } from "../Command";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { ROLE } from "@growserver/const";
+import { ROLE } from "@monotopia/const";
 import { Variant } from "growtopia.js";
-import { DialogBuilder } from "@growserver/utils";
+import { DialogBuilder } from "@monotopia/utils";
 
 function formatDuration(totalSeconds: number): string {
   const days = Math.floor(totalSeconds / 86400);

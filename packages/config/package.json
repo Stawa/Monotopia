@@ -1,23 +1,24 @@
 {
-  "name": "@growserver/config",
+  "name": "@monotopia/config",
   "private": true,
   "version": "0.0.0",
-  "description": "GrowServer config files",
+  "description": "Monotopia config files",
   "main": "./index.ts",
+  "types": "./index.ts",
   "exports": {
     ".": "./index.ts"
   },
-  "author": "JadlionHD <jadlion.dev@gmail.com>",
+  "author": "Stawa",
   "license": "MIT",
   "devDependencies": {
-    "@types/bun": "^1.2.21",
-    "@types/node": "^24.9.2",
-    "typescript": "^5.9.3"
+    "@types/bun": "^1.3.14",
+    "@types/node": "^25.9.2",
+    "typescript": "^6.0.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.19.0"
   },
   "dependencies": {
-    "smol-toml": "^1.4.2"
+    "smol-toml": "^1.6.1"
   }
 }

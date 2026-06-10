@@ -8,15 +8,16 @@ import {
   getCurrentTimeInSeconds,
   RTTEX,
   stripDisplayName,
-} from "@growserver/utils";
-import { DEFAULT_SKIN_COLOR, PacketTypes } from "@growserver/const";
+} from "@monotopia/utils";
+import { DEFAULT_SKIN_COLOR, PacketTypes } from "@monotopia/const";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { type JsonObject } from "type-fest";
 import { customAlphabet } from "nanoid";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import logger from "@growserver/logger";
+import { isIP } from "net";
+import logger from "@monotopia/logger";
 
 export class ITextPacket {
   public obj: Record<string, string | number>;
@@ -49,6 +50,41 @@ export class ITextPacket {
 
   private sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private getClientServerAddress() {
+    const configuredAddress = this.base.config.web.address;
+    const overrideAddress = process.env.MONOTOPIA_SERVER_ADDRESS?.trim();
+    if (overrideAddress) return overrideAddress.replace(/^\[|\]$/g, "");
+
+    if (!["127.0.0.1", "localhost", "::1"].includes(configuredAddress)) {
+      return configuredAddress;
+    }
+
+    const hostsPath = join(process.cwd(), "..", "..", "hosts.txt");
+    if (!existsSync(hostsPath)) return configuredAddress;
+
+    const addresses = {
+      ipv4: [] as string[],
+      ipv6: [] as string[],
+    };
+    for (const line of readFileSync(hostsPath, "utf-8").split(/\r?\n/)) {
+      const cleanLine = line.replace(/#.*/, "").trim();
+      if (!cleanLine) continue;
+
+      const address = cleanLine.split(/\s+/)[0]?.replace(/^\[|\]$/g, "");
+      const family = isIP(address ?? "");
+      if (family === 4 && address && !addresses.ipv4.includes(address))
+        addresses.ipv4.push(address);
+      if (family === 6 && address && !addresses.ipv6.includes(address))
+        addresses.ipv6.push(address);
+    }
+
+    if (process.env.MONOTOPIA_PREFER_IPV6 === "1") {
+      return addresses.ipv6[0] ?? addresses.ipv4[0] ?? configuredAddress;
+    }
+
+    return addresses.ipv4[0] ?? addresses.ipv6[0] ?? configuredAddress;
   }
 
   private getVisibleGrowID(
@@ -199,6 +235,10 @@ export class ITextPacket {
       itemsHash = this.base.items.hash;
     }
 
+    const serverTick =
+      process.env.MONOTOPIA_SERVER_TICK?.trim() ||
+      `${Math.floor(Date.now() / 1000)}`;
+
     return this.peer.send(
       Variant.from(
         "OnSuperMainStartAcceptLogonHrdxs47254722215a",
@@ -206,7 +246,7 @@ export class ITextPacket {
         this.base.config.web.cdnUrl.replace(/\/+$/, ""), // https://github.com/StileDevs/growserver-cache
         "growtopia/",
         "cc.cz.madkite.freedom org.aqua.gg idv.aqua.bulldog com.cih.gamecih2 com.cih.gamecih com.cih.game_cih cn.maocai.gamekiller com.gmd.speedtime org.dax.attack com.x0.strai.frep com.x0.strai.free org.cheatengine.cegui org.sbtools.gamehack com.skgames.traffikrider org.sbtoods.gamehaca com.skype.ralder org.cheatengine.cegui.xx.multi1458919170111 com.prohiro.macro me.autotouch.autotouch com.cygery.repetitouch.free com.cygery.repetitouch.pro com.proziro.zacro com.slash.gamebuster",
-        "proto=216|choosemusic=audio/ogg/about_theme.ogg|active_holiday=6|wing_week_day=0|ubi_week_day=0|server_tick=638729041|clash_active=0|drop_lavacheck_faster=1|isPayingUser=0|usingStoreNavigation=1|enableInventoryTab=1|bigBackpack=1|",
+        `proto=216|choosemusic=audio/ogg/about_theme.ogg|active_holiday=6|wing_week_day=0|ubi_week_day=0|server_tick=${serverTick}|clash_active=0|drop_lavacheck_faster=1|isPayingUser=0|usingStoreNavigation=1|enableInventoryTab=1|bigBackpack=1|`,
         0, // player_tribute.dat hash,
       ),
     );
@@ -249,6 +289,11 @@ export class ITextPacket {
       const conf = this.base.config.web;
       const ports = conf.ports as number[];
       const randPort = ports[Math.floor(Math.random() * ports.length)];
+      const tokenServerAddress = data.serverAddress;
+      const serverAddress =
+        typeof tokenServerAddress === "string" && tokenServerAddress.trim()
+          ? tokenServerAddress.replace(/^\[|\]$/g, "")
+          : this.getClientServerAddress();
       const visibleGrowID = this.getVisibleGrowID(player, growId);
       this.peer.send(
         Variant.from("SetHasGrowID", 1, visibleGrowID, password),
@@ -257,7 +302,7 @@ export class ITextPacket {
           randPort,
           Math.random() * (1000000 - 10000) + 10000,
           player.id,
-          `${conf.address}|0|${customAlphabet("0123456789ABCDEF", 32)()}`,
+          `${serverAddress}|0|${customAlphabet("0123456789ABCDEF", 32)()}`,
           1,
           visibleGrowID,
         ),
@@ -325,30 +370,30 @@ export class ITextPacket {
     this.peer.send(Variant.from("SetHasGrowID", 1, visibleGrowID, password));
 
     const defaultInventory = {
-      max:   32,
+      max: 32,
       items: [
         {
-          id:     18, // Fist
+          id: 18, // Fist
           amount: 1,
         },
         {
-          id:     32, // Wrench
+          id: 32, // Wrench
           amount: 1,
         },
       ],
     };
 
     const defaultClothing = {
-      hair:     0,
-      shirt:    0,
-      pants:    0,
-      feet:     0,
-      face:     0,
-      hand:     0,
-      back:     0,
-      mask:     0,
+      hair: 0,
+      shirt: 0,
+      pants: 0,
+      feet: 0,
+      face: 0,
+      hand: 0,
+      back: 0,
+      mask: 0,
       necklace: 0,
-      ances:    0,
+      ances: 0,
     };
 
     this.peer.data.name = player.name;
@@ -383,12 +428,12 @@ export class ITextPacket {
     );
 
     this.peer.data.state = {
-      mod:             0,
+      mod: 0,
       canWalkInBlocks: false,
-      modsEffect:      0,
-      isGhost:         false,
-      lava:            {
-        damage:       0,
+      modsEffect: 0,
+      isGhost: false,
+      lava: {
+        damage: 0,
         resetStateAt: 0,
       },
     };

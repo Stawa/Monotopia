@@ -1,5 +1,5 @@
-import { STRING_CIPHER_KEY } from "@growserver/const";
-import { StringOptions } from "@growserver/types";
+import { STRING_CIPHER_KEY } from "@monotopia/const";
+import { StringOptions } from "@monotopia/types";
 
 export class ExtendBuffer {
   public data: Buffer;

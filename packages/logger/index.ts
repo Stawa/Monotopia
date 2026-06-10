@@ -1,16 +1,22 @@
 import pino from "pino";
-import { config } from "@growserver/config";
+import { config } from "@monotopia/config";
+import { APP_NAME } from "@monotopia/const";
+
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 export const logger = pino({
   level: config.server.logLevel,
+  base: {
+    app: APP_NAME.toLowerCase(),
+  },
   transport: isDevelopment
     ? {
         target: "pino-pretty",
         options: {
           colorize: true,
-          translateTime: "SYS:standard",
+          translateTime: "SYS:HH:mm:ss",
           ignore: "pid,hostname",
+          messageFormat: "{if name}[{name}] {end}{msg}",
         },
       }
     : undefined,

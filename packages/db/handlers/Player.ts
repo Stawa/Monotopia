@@ -2,8 +2,8 @@ import { type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { eq, sql } from "drizzle-orm";
 import { players } from "../shared/schemas/Player";
 import bcrypt from "bcryptjs";
-import { DEFAULT_SKIN_COLOR, ROLE } from "@growserver/const";
-import { PeerData } from "@growserver/types";
+import { DEFAULT_SKIN_COLOR, ROLE } from "@monotopia/const";
+import { PeerData } from "@monotopia/types";
 
 export class PlayerDB {
   private static schemaReady: Promise<void> | undefined;

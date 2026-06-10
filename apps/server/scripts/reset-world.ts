@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
-import { Database, worlds } from "@growserver/db";
+import { Database, worlds } from "@monotopia/db";
 
 const usage = () => {
   console.log("Usage: pnpm reset:world <worldName>");

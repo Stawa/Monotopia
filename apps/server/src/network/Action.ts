@@ -1,8 +1,8 @@
 import { Peer } from "../core/Peer";
 import { Base } from "../core/Base";
-import { parseAction } from "@growserver/utils";
+import { parseAction } from "@monotopia/utils";
 import { ActionMap } from "./actions/index";
-import logger from "@growserver/logger";
+import logger from "@monotopia/logger";
 
 export class IActionPacket {
   public obj: Record<string, string>;

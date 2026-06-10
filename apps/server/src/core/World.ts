@@ -1,5 +1,5 @@
 import { PeerData, TankPacket, TextPacket, Variant } from "growtopia.js";
-import { TileData, WorldData } from "@growserver/types";
+import { TileData, WorldData } from "@monotopia/types";
 import { Base } from "./Base";
 import {
   ActionTypes,
@@ -11,7 +11,7 @@ import {
   TankTypes,
   TileCollisionTypes,
   TileFlags,
-} from "@growserver/const";
+} from "@monotopia/const";
 import { Peer } from "./Peer";
 // import { tileParse } from "../world/tiles";
 import { Default } from "../world/generation/Default";

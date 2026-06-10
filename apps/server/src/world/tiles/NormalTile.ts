@@ -1,7 +1,7 @@
 import type { Base } from "../../core/Base";
 import type { World } from "../../core/World";
-import type { TileData } from "@growserver/types";
-import { TileFlags } from "@growserver/const";
+import type { TileData } from "@monotopia/types";
+import { TileFlags } from "@monotopia/const";
 import { Tile } from "../Tile";
 
 export class NormalTile extends Tile {

@@ -1,15 +1,15 @@
 import { Command } from "../Command";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { getRoleName, parseRole, ROLE } from "@growserver/const";
+import { getRoleName, parseRole, ROLE } from "@monotopia/const";
 import { Variant } from "growtopia.js";
 import {
   formatToDisplayName,
   parseUserTarget,
   stripDisplayName,
-} from "@growserver/utils";
+} from "@monotopia/utils";
 import { eq } from "drizzle-orm";
-import { players, Players } from "@growserver/db";
+import { players, Players } from "@monotopia/db";
 
 export default class GiveRole extends Command {
   constructor(

@@ -1,5 +1,5 @@
-import logger from "@growserver/logger";
-import { DialogBuilder } from "@growserver/utils";
+import logger from "@monotopia/logger";
+import { DialogBuilder } from "@monotopia/utils";
 import { Variant } from "growtopia.js";
 import { type NonEmptyObject } from "type-fest";
 import { Base } from "../../core/Base";

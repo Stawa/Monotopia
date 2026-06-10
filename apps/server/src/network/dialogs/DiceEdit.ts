@@ -1,12 +1,12 @@
 import { type NonEmptyObject } from "type-fest";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { TileData } from "@growserver/types";
+import { TileData } from "@monotopia/types";
 import { World } from "../../core/World";
 import { Tile } from "../../world/Tile";
 import { ItemDefinition } from "grow-items";
 import { tileFrom } from "../../world/tiles";
-import { LockPermission, TileFlags } from "@growserver/const";
+import { LockPermission, TileFlags } from "@monotopia/const";
 
 export class DiceEdit {
   private world: World;

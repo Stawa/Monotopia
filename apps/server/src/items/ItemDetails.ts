@@ -4,8 +4,8 @@ import {
   BlockFlags2,
   CLOTH_MAP,
   TileCollisionTypes,
-} from "@growserver/const";
-import { type ItemsInfo } from "@growserver/types";
+} from "@monotopia/const";
+import { type ItemsInfo } from "@monotopia/types";
 import { type ItemDefinition } from "grow-items";
 import { type Base } from "../core/Base";
 

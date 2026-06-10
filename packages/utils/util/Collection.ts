@@ -1,4 +1,4 @@
-import { Collection as BaseCollection } from "@growserver/types";
+import { Collection as BaseCollection } from "@monotopia/types";
 
 /** A {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map | Map} with some Array-like additions. */
 export class Collection<K, V>

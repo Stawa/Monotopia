@@ -1,11 +1,11 @@
 import { Command } from "../Command";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { ROLE } from "@growserver/const";
+import { ROLE } from "@monotopia/const";
 import { Variant } from "growtopia.js";
-import { parseUserTarget } from "@growserver/utils";
+import { parseUserTarget } from "@monotopia/utils";
 import { eq } from "drizzle-orm";
-import { players, Players } from "@growserver/db";
+import { players, Players } from "@monotopia/db";
 
 export default class AddGems extends Command {
   constructor(

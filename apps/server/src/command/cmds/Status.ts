@@ -6,9 +6,9 @@ import {
   getRoleName,
   ModsEffects,
   ROLE,
-} from "@growserver/const";
+} from "@monotopia/const";
 import { Variant } from "growtopia.js";
-import { DialogBuilder } from "@growserver/utils";
+import { DialogBuilder } from "@monotopia/utils";
 import { inferItemEffects } from "../../items/ItemDetails";
 
 function formatEffects(base: Base, peer: Peer): string {

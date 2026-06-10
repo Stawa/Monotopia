@@ -1,10 +1,10 @@
 import type { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import type { World } from "../../core/World";
-import type { TileData } from "@growserver/types";
-import { ExtendBuffer } from "@growserver/utils";
+import type { TileData } from "@monotopia/types";
+import { ExtendBuffer } from "@monotopia/utils";
 import { Tile } from "../Tile";
-import { ActionTypes, LockPermission, TileExtraTypes } from "@growserver/const";
+import { ActionTypes, LockPermission, TileExtraTypes } from "@monotopia/const";
 import { ItemDefinition } from "grow-items";
 import { Variant } from "growtopia.js";
 

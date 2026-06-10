@@ -3,7 +3,7 @@
 import fs from "fs/promises";
 import { existsSync } from "fs";
 import { buildItemsInfo } from "./item-info/build";
-import { Database, dbDir, dbPath } from "@growserver/db";
+import { Database, dbDir, dbPath } from "@monotopia/db";
 
 async function setup() {
   const isData = existsSync(dbDir);

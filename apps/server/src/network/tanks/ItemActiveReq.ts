@@ -2,7 +2,7 @@ import { TankPacket, Variant } from "growtopia.js";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { World } from "../../core/World";
-import { ActionTypes } from "@growserver/const";
+import { ActionTypes } from "@monotopia/const";
 
 export class ItemActiveReq {
   private pos: number;

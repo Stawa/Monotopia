@@ -1,6 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono, type Context } from "hono";
-import { config, frontend } from "@growserver/config";
+import { config, frontend } from "@monotopia/config";
 import { createServer } from "https";
 import {
   downloadMkcert,
@@ -8,14 +8,14 @@ import {
   setupMkcert,
   setupWebsite,
   writeWebLoginToken,
-} from "@growserver/utils";
-import logger from "@growserver/logger";
+} from "@monotopia/utils";
+import logger from "@monotopia/logger";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { readFileSync } from "fs";
 import { join } from "path";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { Database } from "@growserver/db";
+import { Database } from "@monotopia/db";
 
 async function init() {
   const app = new Hono();
@@ -33,8 +33,62 @@ async function init() {
         typeof value === "string" && value.trim().length > 0,
     );
 
-  const authError = (ctx: Context, message: string, cause?: unknown) => {
+  type AuthView = "login" | "register";
+
+  type AuthPageOptions = {
+    message?: string;
+    growId?: string;
+  };
+
+  const escapeHtml = (value = "") =>
+    value.replace(/[&<>"']/g, (char) => {
+      switch (char) {
+        case "&":
+          return "&amp;";
+        case "<":
+          return "&lt;";
+        case ">":
+          return "&gt;";
+        case '"':
+          return "&quot;";
+        case "'":
+          return "&#39;";
+        default:
+          return char;
+      }
+    });
+
+  const shouldRenderAuthPage = (ctx: Context) => {
+    const contentType = ctx.req.header("content-type") ?? "";
+    const accept = ctx.req.header("accept") ?? "";
+
+    if (contentType.includes("application/json")) return false;
+    if (
+      contentType.includes("application/x-www-form-urlencoded") ||
+      contentType.includes("multipart/form-data")
+    )
+      return true;
+
+    return accept.includes("text/html");
+  };
+
+  const authError = (
+    ctx: Context,
+    message: string,
+    cause?: unknown,
+    page?: AuthPageOptions & { view: AuthView },
+  ) => {
     if (cause) logger.warn(`${message}: ${cause}`);
+    if (page && shouldRenderAuthPage(ctx))
+      return ctx.html(
+        authPageHtml(page.view, {
+          growId: page.growId,
+          message,
+        }),
+        200,
+        authHeaders,
+      );
+
     return ctx.json(
       {
         status: "failed",
@@ -92,9 +146,10 @@ async function init() {
     };
   };
 
-  type AuthView = "login" | "register";
-
-  const authPageHtml = (view: AuthView = "login") => {
+  const authPageHtml = (
+    view: AuthView = "login",
+    options: AuthPageOptions = {},
+  ) => {
     const isRegister = view === "register";
     const title = isRegister
       ? "Create your Grow ID"
@@ -112,6 +167,12 @@ async function init() {
     const passwordAutocomplete = isRegister
       ? "new-password"
       : "current-password";
+    const errorMessage = options.message
+      ? `<div class="auth-alert" role="alert">${escapeHtml(options.message)}</div>`
+      : "";
+    const growIdValue = options.growId
+      ? ` value="${escapeHtml(options.growId)}"`
+      : "";
     const confirmPasswordField = isRegister
       ? `<label>
           <span>Confirm password</span>
@@ -203,6 +264,20 @@ async function init() {
         letter-spacing: 0;
         text-align: center;
         text-shadow: var(--text-shadow-strong);
+      }
+
+      .auth-alert {
+        box-sizing: border-box;
+        width: 100%;
+        margin: 0 0 14px;
+        padding: 13px 18px;
+        border-radius: 4px;
+        background: #ffc9d4;
+        color: #a04a55;
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.45;
+        text-shadow: none;
       }
 
       label {
@@ -390,9 +465,10 @@ async function init() {
     <main>
       <form method="POST" action="${formAction}" autocomplete="off">
         <h2>${title}</h2>
+        ${errorMessage}
         <label>
           <span>Grow ID</span>
-          <input name="growId" type="text" placeholder="Your Growtopia Name *" autocomplete="${growIdAutocomplete}" required>
+          <input name="growId" type="text" placeholder="Your Growtopia Name *" autocomplete="${growIdAutocomplete}"${growIdValue} required>
         </label>
         <label>
           <span>Password</span>
@@ -433,7 +509,7 @@ async function init() {
         }),
   );
 
-  app.get("/player/growid/login/validate", (ctx) => {
+  const validateLoginToken = (ctx: Context) => {
     try {
       const query = ctx.req.query();
       const token = query.token;
@@ -447,24 +523,44 @@ async function init() {
     } catch (e) {
       return authError(ctx, "No login token provided.", e);
     }
-  });
+  };
+
+  app.get("/player/growid/login/validate", validateLoginToken);
+  app.get("/player/growid/login/validate/", validateLoginToken);
 
   const validateGrowId = async (ctx: Context) => {
+    const shouldRenderLoginPage = ctx.req.path.includes("/growid/");
+    const loginErrorPage = (growId?: string) =>
+      shouldRenderLoginPage ? { view: "login" as const, growId } : undefined;
+
     try {
       const { growId, password } = await getCredentials(ctx);
 
       if (!growId || !password)
-        return authError(ctx, "Missing GrowID or password.");
+        return authError(
+          ctx,
+          "Missing GrowID or password.",
+          undefined,
+          loginErrorPage(growId),
+        );
 
       const user = await db.players.get(growId.toLowerCase());
       if (!user)
         return authError(
           ctx,
           "GrowID not found. Register first or use an existing account.",
+          undefined,
+          loginErrorPage(growId),
         );
 
       const isValid = await bcrypt.compare(password, user.password);
-      if (!isValid) return authError(ctx, "Password invalid.");
+      if (!isValid)
+        return authError(
+          ctx,
+          "Password invalid.",
+          undefined,
+          loginErrorPage(growId),
+        );
 
       const token = jwt.sign(
         { growId, password },
@@ -476,7 +572,12 @@ async function init() {
 
       return authSuccess(ctx, token);
     } catch (e) {
-      return authError(ctx, "Unable to validate login request.", e);
+      return authError(
+        ctx,
+        "Unable to validate login request.",
+        e,
+        loginErrorPage(),
+      );
     }
   };
 
@@ -484,22 +585,44 @@ async function init() {
     try {
       const { growId, password, confirmPassword } = await getCredentials(ctx);
       const contentType = ctx.req.header("content-type") ?? "";
+      const registerErrorPage = (submittedGrowId?: string) => ({
+        view: "register" as const,
+        growId: submittedGrowId,
+      });
 
       if (!growId || !password || !confirmPassword)
-        return authError(ctx, "Missing GrowID, password, or confirmation.");
+        return authError(
+          ctx,
+          "Missing GrowID, password, or confirmation.",
+          undefined,
+          registerErrorPage(growId),
+        );
 
       const cleanGrowId = growId.trim();
       if (!/^[A-Za-z0-9_]{3,18}$/.test(cleanGrowId))
         return authError(
           ctx,
           "GrowID must be 3-18 characters using letters, numbers, or underscore.",
+          undefined,
+          registerErrorPage(cleanGrowId),
         );
 
       const user = await db.players.get(cleanGrowId.toLowerCase());
-      if (user) return authError(ctx, "GrowID already exists.");
+      if (user)
+        return authError(
+          ctx,
+          "GrowID already exists.",
+          undefined,
+          registerErrorPage(cleanGrowId),
+        );
 
       if (password !== confirmPassword)
-        return authError(ctx, "Password and Confirm Password does not match.");
+        return authError(
+          ctx,
+          "Password and Confirm Password does not match.",
+          undefined,
+          registerErrorPage(cleanGrowId),
+        );
 
       await db.players.set(cleanGrowId, password);
 
@@ -515,18 +638,25 @@ async function init() {
 
       return authSuccess(ctx, token);
     } catch (e) {
-      return authError(ctx, "Unable to sign up.", e);
+      return authError(ctx, "Unable to sign up.", e, {
+        view: "register",
+      });
     }
   };
 
   app.post("/player/login/validate", validateGrowId);
+  app.post("/player/login/validate/", validateGrowId);
   app.post("/player/growid/login/validate", validateGrowId);
+  app.post("/player/growid/login/validate/", validateGrowId);
 
   app.get("/player/growid/login", (ctx) => {
     return ctx.html(authPageHtml("login"));
   });
+  app.get("/player/growid/login/", (ctx) => {
+    return ctx.html(authPageHtml("login"));
+  });
 
-  app.on(["GET", "POST"], "/player/growid/checktoken", async (ctx) => {
+  const checkToken = async (ctx: Context) => {
     try {
       const query = ctx.req.query();
       const contentType = ctx.req.header("content-type") ?? "";
@@ -584,7 +714,10 @@ async function init() {
         e,
       );
     }
-  });
+  };
+
+  app.on(["GET", "POST"], "/player/growid/checktoken", checkToken);
+  app.on(["GET", "POST"], "/player/growid/checktoken/", checkToken);
 
   const validateDashboardToken = (ctx: Context) => {
     try {
@@ -620,8 +753,14 @@ async function init() {
 
   app.get("/player/signup", (ctx) => ctx.html(authPageHtml("register")));
   app.get("/player/growid/signup", (ctx) => ctx.html(authPageHtml("register")));
+  app.get("/player/signup/", (ctx) => ctx.html(authPageHtml("register")));
+  app.get("/player/growid/signup/", (ctx) =>
+    ctx.html(authPageHtml("register")),
+  );
   app.post("/player/signup", createGrowId);
   app.post("/player/growid/signup", createGrowId);
+  app.post("/player/signup/", createGrowId);
+  app.post("/player/growid/signup/", createGrowId);
 
   const dashboardHtml = () =>
     readFileSync(
@@ -629,22 +768,32 @@ async function init() {
       "utf-8",
     );
 
+  const dashboardResponse = (ctx: Context) => {
+    if (ctx.req.method === "HEAD") {
+      return ctx.body(null, 200, {
+        "Content-Type": "text/html; charset=UTF-8",
+      });
+    }
+
+    return ctx.html(dashboardHtml());
+  };
+
   app.post("/player/login/dashboard", (ctx) => {
     return ctx.redirect("/player/growid/login");
   });
-
-  app.get("/player/login/dashboard", (ctx) => {
-    return ctx.html(dashboardHtml());
+  app.post("/player/login/dashboard/*", (ctx) => {
+    return ctx.redirect("/player/growid/login");
   });
 
-  app.on("HEAD", "/player/login/dashboard", (ctx) => {
-    return ctx.body(null, 200, {
-      "Content-Type": "text/html; charset=UTF-8",
-    });
-  });
+  app.on(["GET", "HEAD"], "/player/login/dashboard", dashboardResponse);
+  app.on(["GET", "HEAD"], "/player/login/dashboard/*", dashboardResponse);
+  app.on(["GET", "HEAD"], "/", dashboardResponse);
+  app.on(["GET", "HEAD"], "*", (ctx) => {
+    const path = ctx.req.path;
+    if (path.includes(".") || path.startsWith("/assets/"))
+      return ctx.notFound();
 
-  app.get("/", (ctx) => {
-    return ctx.html(dashboardHtml());
+    return dashboardResponse(ctx);
   });
 
   const fe = frontend();

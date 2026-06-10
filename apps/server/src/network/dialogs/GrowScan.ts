@@ -1,8 +1,8 @@
 import { type NonEmptyObject } from "type-fest";
 import { Variant } from "growtopia.js";
 import { type ItemDefinition } from "grow-items";
-import { DialogBuilder } from "@growserver/utils";
-import { ActionTypes, BlockFlags } from "@growserver/const";
+import { DialogBuilder } from "@monotopia/utils";
+import { ActionTypes, BlockFlags } from "@monotopia/const";
 import type { Base } from "../../core/Base";
 import type { Peer } from "../../core/Peer";
 import type { World } from "../../core/World";

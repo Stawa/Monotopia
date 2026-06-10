@@ -9,8 +9,9 @@ import {
   downloadMacOSItemsDat,
   Collection,
   RTTEX,
-} from "@growserver/utils";
-import { join } from "path";
+} from "@monotopia/utils";
+import { basename, join } from "path";
+import { createSocket, type RemoteInfo, type Socket } from "dgram";
 import { ConnectListener } from "../events/Connect";
 import { DisconnectListener } from "../events/Disconnect";
 import { type PackageJson } from "type-fest";
@@ -22,21 +23,27 @@ import {
   CustomItemsConfig,
   ItemsData,
   ItemsInfo,
-} from "@growserver/types";
-import { Database } from "@growserver/db";
+} from "@monotopia/types";
+import { Database } from "@monotopia/db";
 import { Peer } from "./Peer";
 import { World } from "./World";
 import { mkdir, writeFile, readFile } from "fs/promises";
 import chokidar from "chokidar";
 import {
+  APP_COPYRIGHT_START_YEAR,
+  APP_NAME,
+  APP_ORIGINAL_AUTHOR,
+  APP_ORIGINAL_PROJECT,
+  APP_ORIGINAL_REPOSITORY,
+  APP_OWNER,
   ActionTypes,
   BlockFlags,
   ITEM_ROYAL_LOCK,
   ITEMS_DAT_NAME,
-} from "@growserver/const";
+} from "@monotopia/const";
 import { ItemsDat, ItemsDatMeta, type ItemDefinition } from "grow-items";
-import { config as configServer } from "@growserver/config";
-import logger from "@growserver/logger";
+import { config as configServer } from "@monotopia/config";
+import logger from "@monotopia/logger";
 import { decodeItemsDatCompat } from "../items/ItemsDatCompat";
 
 __dirname = process.cwd();
@@ -48,69 +55,69 @@ const CORE_ITEM_OVERRIDES: Record<number, Partial<ItemDefinition>> = {
   4: { name: "Lava", type: ActionTypes.FOREGROUND, collisionType: 1 },
   5: { name: "Lava Seed", type: ActionTypes.SEED, growTime: 30 },
   6: {
-    name:          "Main Door",
-    type:          ActionTypes.MAIN_DOOR,
-    flags:         BlockFlags.WRENCHABLE | BlockFlags.MOD | BlockFlags.PUBLIC,
+    name: "Main Door",
+    type: ActionTypes.MAIN_DOOR,
+    flags: BlockFlags.WRENCHABLE | BlockFlags.MOD | BlockFlags.PUBLIC,
     collisionType: 0,
-    breakHits:     999999,
+    breakHits: 999999,
   },
   8: {
-    name:          "Bedrock",
-    type:          ActionTypes.FOREGROUND,
-    flags:         BlockFlags.MOD,
+    name: "Bedrock",
+    type: ActionTypes.FOREGROUND,
+    flags: BlockFlags.MOD,
     collisionType: 1,
-    breakHits:     999999,
+    breakHits: 999999,
   },
-  9:  { name: "Bedrock Seed", type: ActionTypes.SEED, growTime: 30 },
+  9: { name: "Bedrock Seed", type: ActionTypes.SEED, growTime: 30 },
   10: { name: "Rock", type: ActionTypes.FOREGROUND, collisionType: 1 },
   11: { name: "Rock Seed", type: ActionTypes.SEED, growTime: 30 },
   14: {
-    name:          "Cave Background",
-    type:          ActionTypes.BACKGROUND,
+    name: "Cave Background",
+    type: ActionTypes.BACKGROUND,
     collisionType: 0,
   },
-  15:  { name: "Cave Background Seed", type: ActionTypes.SEED, growTime: 30 },
-  18:  { name: "Fist", type: ActionTypes.FIST, maxAmount: 1 },
-  32:  { name: "Wrench", type: ActionTypes.WRENCH, maxAmount: 1 },
+  15: { name: "Cave Background Seed", type: ActionTypes.SEED, growTime: 30 },
+  18: { name: "Fist", type: ActionTypes.FIST, maxAmount: 1 },
+  32: { name: "Wrench", type: ActionTypes.WRENCH, maxAmount: 1 },
   112: { name: "Gem", type: ActionTypes.GEMS, maxAmount: 200 },
   202: {
-    name:  "Small Lock",
-    type:  ActionTypes.LOCK,
+    name: "Small Lock",
+    type: ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },
   204: {
-    name:  "Big Lock",
-    type:  ActionTypes.LOCK,
+    name: "Big Lock",
+    type: ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },
   206: {
-    name:  "Huge Lock",
-    type:  ActionTypes.LOCK,
+    name: "Huge Lock",
+    type: ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },
   242: {
-    name:  "World Lock",
-    type:  ActionTypes.LOCK,
+    name: "World Lock",
+    type: ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },
   1796: {
-    name:  "Diamond Lock",
-    type:  ActionTypes.LOCK,
+    name: "Diamond Lock",
+    type: ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },
   [ITEM_ROYAL_LOCK]: {
-    name:  "Royal Lock",
-    type:  ActionTypes.LOCK,
+    name: "Royal Lock",
+    type: ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },
   4994: {
-    name:  "Builder's Lock",
-    type:  ActionTypes.LOCK,
+    name: "Builder's Lock",
+    type: ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },
   7188: {
-    name:  "Blue Gem Lock",
-    type:  ActionTypes.LOCK,
+    name: "Blue Gem Lock",
+    type: ActionTypes.LOCK,
     flags: BlockFlags.WRENCHABLE,
   },
 };
@@ -123,11 +130,21 @@ export class Base {
   public cdn: CDNContent;
   public cache: Cache;
   public database: Database;
+  private ipv6Proxy?: Socket;
+  private ipv6ProxyClients = new Map<
+    string,
+    {
+      address: string;
+      port: number;
+      socket: Socket;
+      timeout: NodeJS.Timeout;
+    }
+  >();
 
   constructor() {
     this.server = new Client({
       enet: {
-        ip:                 "0.0.0.0",
+        ip: "0.0.0.0",
         useNewServerPacket: true,
       },
     });
@@ -137,14 +154,14 @@ export class Base {
     this.config = configServer;
     this.cdn = { version: "", uri: "0000/0000", itemsDatName: "" };
     this.items = {
-      content:  Buffer.alloc(0),
-      hash:     "",
+      content: Buffer.alloc(0),
+      hash: "",
       metadata: {} as ItemsDatMeta,
-      wiki:     [],
+      wiki: [],
     };
     this.cache = {
-      peers:    new Collection(),
-      worlds:   new Collection(),
+      peers: new Collection(),
+      worlds: new Collection(),
       cooldown: new Collection(),
     };
 
@@ -153,9 +170,7 @@ export class Base {
 
   public async start() {
     try {
-      logger.info(
-        `GrowServer | Version: ${this.package.version} | Copyright JadlionHD 2022-${new Date().getFullYear()}`,
-      );
+      this.logStartupBanner();
 
       // Check if port is available
       const port = this.server.config.enet?.port || 17091;
@@ -177,8 +192,8 @@ export class Base {
         }
 
         this.cdn = {
-          version:      this.getItemsDatVersion(cachedItemsDatName),
-          uri:          "",
+          version: this.getItemsDatVersion(cachedItemsDatName),
+          uri: "",
           itemsDatName: cachedItemsDatName,
         };
         logger.warn(`Using cached items.dat: ${cachedItemsDatName}`);
@@ -193,10 +208,10 @@ export class Base {
       const itemsDat = readFileSync(datName);
 
       this.items = {
-        hash:     `${RTTEX.hash(itemsDat)}`,
-        content:  itemsDat,
+        hash: `${RTTEX.hash(itemsDat)}`,
+        content: itemsDat,
         metadata: {} as ItemsDatMeta,
-        wiki:     [] as ItemsInfo[],
+        wiki: [] as ItemsInfo[],
       };
 
       logger.info(`Starting ENet server on port ${port}`);
@@ -205,6 +220,7 @@ export class Base {
       await new Promise((resolve, reject) => {
         try {
           this.server.listen();
+          this.startIPv6UdpProxy(port);
           resolve(true);
         } catch (err) {
           reject(err);
@@ -219,6 +235,87 @@ export class Base {
     }
   }
 
+  private startIPv6UdpProxy(port: number) {
+    if (process.env.MONOTOPIA_IPV6_PROXY === "0") return;
+    if (this.ipv6Proxy) return;
+
+    const proxy = createSocket({ type: "udp6", ipv6Only: true });
+
+    proxy.on("message", (message, rinfo) => {
+      const client = this.getIPv6ProxyClient(rinfo);
+      client.socket.send(message, port, "127.0.0.1");
+    });
+
+    proxy.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "EADDRINUSE") {
+        logger.warn(`IPv6 UDP proxy skipped: [::]:${port} is already in use.`);
+        return;
+      }
+
+      logger.warn(`IPv6 UDP proxy error: ${error.message}`);
+    });
+
+    proxy.bind(port, "::", () => {
+      logger.info(`IPv6 UDP proxy listening on [::]:${port}`);
+      logger.info(`Forwarding IPv6 UDP to 127.0.0.1:${port}`);
+    });
+
+    this.ipv6Proxy = proxy;
+  }
+
+  private ipv6ProxyClientKey(rinfo: RemoteInfo) {
+    return `${rinfo.address}:${rinfo.port}`;
+  }
+
+  private refreshIPv6ProxyClient(key: string) {
+    const client = this.ipv6ProxyClients.get(key);
+    if (!client) return;
+
+    clearTimeout(client.timeout);
+    client.timeout = setTimeout(() => this.closeIPv6ProxyClient(key), 120000);
+  }
+
+  private closeIPv6ProxyClient(key: string) {
+    const client = this.ipv6ProxyClients.get(key);
+    if (!client) return;
+
+    clearTimeout(client.timeout);
+    client.socket.close();
+    this.ipv6ProxyClients.delete(key);
+    logger.info(`IPv6 UDP proxy closed ${key}`);
+  }
+
+  private getIPv6ProxyClient(rinfo: RemoteInfo) {
+    const key = this.ipv6ProxyClientKey(rinfo);
+    const existingClient = this.ipv6ProxyClients.get(key);
+    if (existingClient) {
+      this.refreshIPv6ProxyClient(key);
+      return existingClient;
+    }
+
+    const socket = createSocket("udp4");
+    const client = {
+      address: rinfo.address,
+      port: rinfo.port,
+      socket,
+      timeout: setTimeout(() => this.closeIPv6ProxyClient(key), 120000),
+    };
+
+    socket.on("message", (message) => {
+      this.ipv6Proxy?.send(message, client.port, client.address);
+      this.refreshIPv6ProxyClient(key);
+    });
+
+    socket.on("error", (error) => {
+      logger.warn(`IPv6 UDP proxy target error for ${key}: ${error.message}`);
+      this.closeIPv6ProxyClient(key);
+    });
+
+    this.ipv6ProxyClients.set(key, client);
+    logger.info(`IPv6 UDP proxy opened ${key}`);
+    return client;
+  }
+
   private async loadEvents() {
     const connect = new ConnectListener(this);
     const disconnect = new DisconnectListener(this);
@@ -230,36 +327,41 @@ export class Base {
       raw.run(netID, channelID, data),
     );
 
-    // Register command aliases after server has started
-    this.registerCommandAliases();
+    await this.registerCommandAliases();
 
-    // Check items-config.json file changes
     chokidar
       .watch(join(__dirname, "assets", "custom-items"), { persistent: true })
       .on("change", async (path) => {
-        const pathArr = path.split("\\");
-        const fileName = pathArr[pathArr.length - 1];
-        chokidar
-          .watch(join(__dirname, "assets", "custom-items"), {
-            persistent: true,
-          })
-          .on("change", async (path) => {
-            const pathArr = path.split("\\");
-            const fileName = pathArr[pathArr.length - 1];
+        const fileName = basename(path);
 
-            logger.info(
-              `Detected custom-items directory changes | ${fileName}`,
-            );
-            logger.info(`Refreshing items data`);
-            await this.loadItems();
-          });
-        logger.info(`Detected custom-items directory changes | ${fileName}`);
-        logger.info(`Refreshing items data`);
+        logger.info(`Detected custom-items change: ${fileName}`);
+        logger.info("Refreshing items data");
         await this.loadItems();
       });
   }
 
-  // Register command aliases after server initialization
+  private logStartupBanner() {
+    const currentYear = Math.max(
+      new Date().getFullYear(),
+      APP_COPYRIGHT_START_YEAR,
+    );
+    const copyrightYears =
+      currentYear === APP_COPYRIGHT_START_YEAR
+        ? `${APP_COPYRIGHT_START_YEAR}`
+        : `${APP_COPYRIGHT_START_YEAR}-${currentYear}`;
+    const rows = [
+      `${APP_NAME} v${this.package.version}`,
+      `Copyright (c) ${copyrightYears} ${APP_OWNER}`,
+      `Based on ${APP_ORIGINAL_PROJECT} by ${APP_ORIGINAL_AUTHOR}`,
+      APP_ORIGINAL_REPOSITORY,
+    ];
+    const width = Math.max(...rows.map((row) => row.length)) + 4;
+    const line = "=".repeat(width);
+    const body = rows.map((row) => `| ${row.padEnd(width - 4)} |`).join("\n");
+
+    logger.info(`\n${line}\n${body}\n${line}`);
+  }
+
   private async registerCommandAliases() {
     try {
       const { registerAliases } = await import("../command/cmds/index");
@@ -340,43 +442,43 @@ export class Base {
     const normalized: ItemDefinition = { ...(item ?? {}) };
     const fallback: ItemDefinition = {
       id,
-      name:               `Item ${id}`,
-      flags:              0,
-      flags2:             0,
-      flags3:             0,
-      type:               ActionTypes.FOREGROUND,
-      materialType:       0,
-      collisionType:      1,
-      breakHits:          6,
-      resetStateAfter:    4,
-      bodyPartType:       0,
-      blockType:          0,
-      growTime:           0,
-      rarity:             1,
-      maxAmount:          200,
-      texture:            "",
-      textureHash:        0,
-      textureX:           0,
-      textureY:           0,
-      storageType:        0,
-      visualEffectType:   0,
-      cookingTime:        0,
-      extraFile:          "",
-      extraFileHash:      0,
-      audioVolume:        0,
-      seedBase:           0,
-      seedOverlay:        0,
-      treeBase:           0,
-      treeLeaves:         0,
-      seedColor:          0,
-      seedOverlayColor:   0,
-      isMultiFace:        0,
+      name: `Item ${id}`,
+      flags: 0,
+      flags2: 0,
+      flags3: 0,
+      type: ActionTypes.FOREGROUND,
+      materialType: 0,
+      collisionType: 1,
+      breakHits: 6,
+      resetStateAfter: 4,
+      bodyPartType: 0,
+      blockType: 0,
+      growTime: 0,
+      rarity: 1,
+      maxAmount: 200,
+      texture: "",
+      textureHash: 0,
+      textureX: 0,
+      textureY: 0,
+      storageType: 0,
+      visualEffectType: 0,
+      cookingTime: 0,
+      extraFile: "",
+      extraFileHash: 0,
+      audioVolume: 0,
+      seedBase: 0,
+      seedOverlay: 0,
+      treeBase: 0,
+      treeLeaves: 0,
+      seedColor: 0,
+      seedOverlayColor: 0,
+      isMultiFace: 0,
       isStripeyWallpaper: 0,
-      extraOptions:       "",
-      texture2:           "",
-      extraOptions2:      "",
-      punchOptions:       "",
-      tileRange:          4,
+      extraOptions: "",
+      texture2: "",
+      extraOptions2: "",
+      punchOptions: "",
+      tileRange: 4,
       ...CORE_ITEM_OVERRIDES[id],
     };
 
@@ -415,16 +517,16 @@ export class Base {
       }
 
       wikiById.set(item.id, {
-        id:     item.id,
-        name:   item.name,
-        desc:   item.desc ?? "",
+        id: item.id,
+        name: item.name,
+        desc: item.desc ?? "",
         recipe: { splice: item.recipe?.splice ?? [] },
-        func:   {
+        func: {
           add: item.func?.add ?? "",
           rem: item.func?.rem ?? "",
         },
         playMods: item.playMods ?? [],
-        chi:      item.chi ?? "",
+        chi: item.chi ?? "",
       });
     }
 
@@ -438,13 +540,13 @@ export class Base {
       if (!Number.isInteger(item.id) || wikiById.has(item.id!)) continue;
 
       wikiById.set(item.id!, {
-        id:       item.id!,
-        name:     item.name ?? `Item ${item.id}`,
-        desc:     "",
-        recipe:   { splice: [] },
-        func:     { add: "", rem: "" },
+        id: item.id!,
+        name: item.name ?? `Item ${item.id}`,
+        desc: "",
+        recipe: { splice: [] },
+        func: { add: "", rem: "" },
         playMods: [],
-        chi:      "",
+        chi: "",
       });
     }
 
@@ -591,8 +693,8 @@ export class Base {
 
   public async getLatestCdn() {
     const data: CDNContent = {
-      version:      this.getItemsDatVersion(ITEMS_DAT_NAME),
-      uri:          "",
+      version: this.getItemsDatVersion(ITEMS_DAT_NAME),
+      uri: "",
       itemsDatName: ITEMS_DAT_NAME,
     };
 
@@ -689,6 +791,10 @@ export class Base {
   public async shutdown() {
     logger.info("Shutting down server...");
     await this.saveAll(true);
+    for (const key of this.ipv6ProxyClients.keys()) {
+      this.closeIPv6ProxyClient(key);
+    }
+    this.ipv6Proxy?.close();
     process.exit(0);
   }
 }

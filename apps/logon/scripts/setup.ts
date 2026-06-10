@@ -1,6 +1,6 @@
 "use strict";
 
-import { downloadMkcert, setupMkcert } from "@growserver/utils";
+import { downloadMkcert, setupMkcert } from "@monotopia/utils";
 
 async function setup() {
   await downloadMkcert();

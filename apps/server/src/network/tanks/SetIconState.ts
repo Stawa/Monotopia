@@ -2,7 +2,7 @@ import { TankPacket } from "growtopia.js";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { World } from "../../core/World";
-import { TileData } from "@growserver/types";
+import { TileData } from "@monotopia/types";
 
 export class SetIconState {
   private pos: number;

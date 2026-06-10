@@ -2,8 +2,8 @@ import { ItemDefinition } from "grow-items";
 import type { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import type { World } from "../../core/World";
-import type { TileData } from "@growserver/types";
-import { ExtendBuffer, DialogBuilder } from "@growserver/utils";
+import type { TileData } from "@monotopia/types";
+import { ExtendBuffer, DialogBuilder } from "@monotopia/utils";
 import { Tile } from "../Tile";
 import {
   ActionTypes,
@@ -11,7 +11,7 @@ import {
   LockPermission,
   ROLE,
   TileExtraTypes,
-} from "@growserver/const";
+} from "@monotopia/const";
 import { Variant } from "growtopia.js";
 
 export class DisplayBlockTile extends Tile {

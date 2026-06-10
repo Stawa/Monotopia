@@ -18,9 +18,9 @@ services:
     image: postgres:17
     restart: unless-stopped
     environment:
-      POSTGRES_USER: growserver
+      POSTGRES_USER: monotopia
       POSTGRES_PASSWORD: ilovereimu
-      POSTGRES_DB: growserver
+      POSTGRES_DB: monotopia
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

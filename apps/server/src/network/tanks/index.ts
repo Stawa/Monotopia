@@ -1,5 +1,5 @@
 import { type Class } from "type-fest";
-import { TankTypes } from "@growserver/const";
+import { TankTypes } from "@monotopia/const";
 import { TileChangeReq } from "./TileChangeReq";
 import { Disconnect } from "./Disconnect";
 import { SetIconState } from "./SetIconState";

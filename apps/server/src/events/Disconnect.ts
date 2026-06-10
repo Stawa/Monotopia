@@ -1,9 +1,9 @@
 import { Base } from "../core/Base";
 import { World } from "../core/World";
 import { tileFrom, tileUpdateMultiple } from "../world/tiles";
-import { TileFlags } from "@growserver/const";
+import { TileFlags } from "@monotopia/const";
 import { HeartMonitorTile } from "../world/tiles/HeartMonitorTile";
-import logger from "@growserver/logger";
+import logger from "@monotopia/logger";
 
 export class DisconnectListener {
   constructor(public base: Base) {

@@ -2,7 +2,7 @@ import { Tank, TankPacket, Variant } from "growtopia.js";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { World } from "../../core/World";
-import { TileData } from "@growserver/types";
+import { TileData } from "@monotopia/types";
 import {
   ActionTypes,
   BlockFlags,
@@ -11,10 +11,10 @@ import {
   ROLE,
   TankTypes,
   TileFlags,
-} from "@growserver/const";
+} from "@monotopia/const";
 import { ItemDefinition } from "grow-items";
 import { tileFrom } from "../../world/tiles";
-import { DialogBuilder } from "@growserver/utils";
+import { DialogBuilder } from "@monotopia/utils";
 
 export class TileChangeReq {
   constructor(

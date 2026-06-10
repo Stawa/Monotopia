@@ -7,7 +7,7 @@ import {
   serial,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { DEFAULT_SKIN_COLOR } from "@growserver/const";
+import { DEFAULT_SKIN_COLOR } from "@monotopia/const";
 
 export const players = pgTable("players", {
   id: serial("id").primaryKey(),

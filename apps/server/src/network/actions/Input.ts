@@ -3,8 +3,8 @@ import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { CommandMap, CommandsAliasMap } from "../../command/cmds/index";
 import { Variant } from "growtopia.js";
-import logger from "@growserver/logger";
-import { getRoleName, hasRolePermission, ROLE } from "@growserver/const";
+import logger from "@monotopia/logger";
+import { getRoleName, hasRolePermission, ROLE } from "@monotopia/const";
 
 export class Input {
   constructor(

@@ -4,12 +4,12 @@ import {
   BlockFlags,
   LockPermission,
   TileFlags,
-} from "@growserver/const";
+} from "@monotopia/const";
 import type { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import type { World } from "../../core/World";
-import type { TileData } from "@growserver/types";
-import { ExtendBuffer, DialogBuilder } from "@growserver/utils";
+import type { TileData } from "@monotopia/types";
+import { ExtendBuffer, DialogBuilder } from "@monotopia/utils";
 import { Tile } from "../Tile";
 
 export class SwitcheROO extends Tile {

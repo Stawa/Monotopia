@@ -1,4 +1,4 @@
-import type { TileData, PeerData } from "@growserver/types";
+import type { TileData, PeerData } from "@monotopia/types";
 import {
   Peer as OldPeer,
   TankPacket,
@@ -21,12 +21,12 @@ import {
   PacketTypes,
   ROLE,
   TankTypes,
-} from "@growserver/const";
+} from "@monotopia/const";
 import {
   formatToDisplayName,
   getCurrentTimeInSeconds,
   manageArray,
-} from "@growserver/utils";
+} from "@monotopia/utils";
 import { tileFrom, tileUpdateMultiple } from "../world/tiles";
 import {
   getItemEffectText,
@@ -509,7 +509,7 @@ export class Peer extends OldPeer<PeerData> {
     const world = this.currentWorld();
     if (!world) return;
 
-    let mainDoor = world?.data.blocks.find((block) => block.fg === 6);
+    let mainDoor: TileData | undefined;
 
     if (this.data.lastCheckpoint) {
       const pos =
@@ -517,7 +517,7 @@ export class Peer extends OldPeer<PeerData> {
         this.data.lastCheckpoint.y * (world?.data.width as number);
       const block = world?.data.blocks[pos];
       const itemMeta = this.base.items.metadata.items.get(
-        ((block?.fg as number).toString || (block?.bg as number)).toString(),
+        block?.fg || block?.bg || 0,
       );
 
       if (itemMeta && itemMeta.type === ActionTypes.CHECKPOINT) {

@@ -2,17 +2,19 @@ import {
   createWriteStream,
   existsSync,
   mkdirSync,
+  readFileSync,
   writeFileSync,
   readdirSync,
   unlinkSync,
 } from "fs";
 import { join } from "path";
 import { execFileSync } from "child_process";
+import { networkInterfaces } from "os";
 import net from "net";
 import ky from "ky";
 import decompress from "decompress";
-import { ITEMS_DAT_NAME, ITEMS_DAT_URL, ROLE } from "@growserver/const";
-import logger from "@growserver/logger";
+import { ITEMS_DAT_NAME, ITEMS_DAT_URL, ROLE } from "@monotopia/const";
+import logger from "@monotopia/logger";
 
 __dirname = process.cwd();
 
@@ -198,23 +200,46 @@ export async function setupMkcert() {
       : "mkcert.exe";
   const mkcertExecuteable = join(__dirname, ".cache", "bin", name);
   const sslDir = join(__dirname, ".cache", "ssl");
-  const certName = "_wildcard.growserver.app.pem";
-  const keyName = "_wildcard.growserver.app-key.pem";
-  const markerPath = join(sslDir, ".mkcert-hosts-v3");
+  const certName = "_wildcard.monotopia.app.pem";
+  const keyName = "_wildcard.monotopia.app-key.pem";
+  const markerPath = join(sslDir, ".mkcert-hosts-v4");
+  const localAddresses = [
+    ...new Set(
+      Object.values(networkInterfaces())
+        .flatMap((addresses) => addresses ?? [])
+        .filter(
+          (address) =>
+            (address.family === "IPv4" || address.family === "IPv6") &&
+            !address.internal &&
+            !address.address.startsWith("169.254.") &&
+            !address.address.toLowerCase().startsWith("fe80:"),
+        )
+        .map((address) => address.address.split("%")[0]),
+    ),
+  ];
   const hosts = [
-    "*.growserver.app",
+    "*.monotopia.app",
     "login.growtopiagame.com",
+    "api.growtopiagame.com",
+    "www.growtopiagame.com",
+    "growtopiagame.com",
+    "grow-login-alb-789365796.us-east-1.elb.amazonaws.com",
     "www.growtopia1.com",
     "www.growtopia2.com",
     "growtopia1.com",
     "growtopia2.com",
+    ...localAddresses,
   ];
+  const expectedMarker = hosts.join("\n");
+  const currentMarker = existsSync(markerPath)
+    ? readFileSync(markerPath, "utf-8").trim()
+    : "";
 
   if (!existsSync(sslDir)) mkdirSync(sslDir, { recursive: true });
   if (
     existsSync(join(sslDir, certName)) &&
     existsSync(join(sslDir, keyName)) &&
-    existsSync(markerPath)
+    currentMarker === expectedMarker
   )
     return;
 
@@ -233,7 +258,7 @@ export async function setupMkcert() {
       ["-cert-file", certName, "-key-file", keyName, ...hosts],
       { cwd: sslDir, stdio: "inherit" },
     );
-    writeFileSync(markerPath, hosts.join("\n"));
+    writeFileSync(markerPath, expectedMarker);
   } catch (e) {
     logger.error(`Something wrong when setup mkcert: ${e}`);
   }
@@ -258,10 +283,6 @@ export async function setupWebsite() {
 
   logger.info("Setup website assets");
   try {
-    console.log(
-      join(__dirname, ".cache", "compressed", "build.zip"),
-      "awdjawidjwad",
-    );
     await decompress(
       join(__dirname, ".cache", "compressed", "build.zip"),
       join(__dirname, ".cache"),

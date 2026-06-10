@@ -1,10 +1,10 @@
 import { Variant } from "growtopia.js";
-import { TileExtraTypes, TileFlags } from "@growserver/const";
+import { TileExtraTypes, TileFlags } from "@monotopia/const";
 import type { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import type { World } from "../../core/World";
-import type { TileData } from "@growserver/types";
-import { DialogBuilder, ExtendBuffer } from "@growserver/utils";
+import type { TileData } from "@monotopia/types";
+import { DialogBuilder, ExtendBuffer } from "@monotopia/utils";
 import { Tile } from "../Tile";
 import { ItemDefinition } from "grow-items";
 

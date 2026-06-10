@@ -1,6 +1,6 @@
 import { type NonEmptyObject } from "type-fest";
-import { ActionTypes, ROLE } from "@growserver/const";
-import { DialogBuilder } from "@growserver/utils";
+import { ActionTypes, ROLE } from "@monotopia/const";
+import { DialogBuilder } from "@monotopia/utils";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { Variant } from "growtopia.js";

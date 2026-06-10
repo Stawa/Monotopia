@@ -1,10 +1,10 @@
 import { type NonEmptyObject } from "type-fest";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { TileData } from "@growserver/types";
+import { TileData } from "@monotopia/types";
 import { World } from "../../core/World";
 import { tileFrom } from "../../world/tiles";
-import { LockPermission, ROLE, TileFlags } from "@growserver/const";
+import { LockPermission, ROLE, TileFlags } from "@monotopia/const";
 
 export class GatewayEdit {
   private world: World;

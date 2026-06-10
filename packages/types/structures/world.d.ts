@@ -1,4 +1,4 @@
-import type { LockPermission } from "@growserver/const";
+import type { LockPermission } from "@monotopia/const";
 
 export interface TileData {
   fg: number;

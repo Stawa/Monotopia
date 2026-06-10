@@ -11,16 +11,16 @@ enable = false
 message = "Maintenance Woi"
 
 [web.tls]
-key = "./.cache/ssl/_wildcard.growserver.app-key.pem"
-cert = "./.cache/ssl/_wildcard.growserver.app.pem"
+key = "./.cache/ssl/_wildcard.monotopia.app-key.pem"
+cert = "./.cache/ssl/_wildcard.monotopia.app.pem"
 
 [webFrontend]
 root = "./.cache/website"
 port = 8080
 
 [webFrontend.tls]
-key = "./.cache/ssl/_wildcard.growserver.app-key.pem"
-cert = "./.cache/ssl/_wildcard.growserver.app.pem"
+key = "./.cache/ssl/_wildcard.monotopia.app-key.pem"
+cert = "./.cache/ssl/_wildcard.monotopia.app.pem"
 
 [server]
 bypassVersionCheck = true

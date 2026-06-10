@@ -1,3 +1,11 @@
+export const APP_NAME = "Monotopia";
+export const APP_OWNER = "Stawa";
+export const APP_COPYRIGHT_START_YEAR = 2026;
+export const APP_ORIGINAL_PROJECT = "GrowServer";
+export const APP_ORIGINAL_AUTHOR = "JadlionHD";
+export const APP_ORIGINAL_REPOSITORY =
+  "https://github.com/StileDevs/GrowServer";
+
 export const ITEMS_DAT_URL = "https://monotopia-cache.netlify.app/growtopia";
 export const ITEMS_DAT_NAME = "items-v5.48.dat";
 

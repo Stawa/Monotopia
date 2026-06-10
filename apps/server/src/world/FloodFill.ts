@@ -1,5 +1,5 @@
 import { TankPacket } from "growtopia.js";
-import { type TileData } from "@growserver/types";
+import { type TileData } from "@monotopia/types";
 import { Base } from "../core/Base";
 import {
   BlockFlags2,
@@ -7,7 +7,7 @@ import {
   LOCKS,
   TankTypes,
   TileIgnore,
-} from "@growserver/const";
+} from "@monotopia/const";
 import { World } from "../core/World";
 import { Peer } from "../core/Peer";
 
@@ -57,12 +57,10 @@ export class Floodfill {
       const node = toBeExplored.shift();
       if (!node) break;
 
-      let neighbours = undefined;
-
       // if (node.x == this.data.s_block.x && node.y == this.data.s_block.y)
       //   neighbours = this.neighbours(node, true);
       // else
-      neighbours = this.neighbours(node);
+      const neighbours = this.neighbours(node);
 
       for (const neighbour of neighbours) {
         if (!this.isConnectedToFaces(neighbour)) continue;

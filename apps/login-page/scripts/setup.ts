@@ -5,7 +5,7 @@ import {
   downloadWebsite,
   setupMkcert,
   setupWebsite,
-} from "@growserver/utils";
+} from "@monotopia/utils";
 
 async function setup() {
   await downloadMkcert();

@@ -1,5 +1,5 @@
-import { WORLD_CATEGORIES } from "@growserver/const";
-import type { WorldData } from "@growserver/types";
+import { WORLD_CATEGORIES } from "@monotopia/const";
+import type { WorldData } from "@monotopia/types";
 import type { Base } from "./Base";
 import type { Peer } from "./Peer";
 

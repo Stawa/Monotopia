@@ -2,9 +2,9 @@ import { ItemDefinition } from "grow-items";
 import type { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import type { World } from "../../core/World";
-import type { TileData, VendingMachine } from "@growserver/types";
-import { ExtendBuffer } from "@growserver/utils";
-import { TileExtraTypes, TileFlags } from "@growserver/const";
+import type { TileData, VendingMachine } from "@monotopia/types";
+import { ExtendBuffer } from "@monotopia/utils";
+import { TileExtraTypes, TileFlags } from "@monotopia/const";
 import { Tile } from "../Tile";
 
 const DEFAULT_ITEM_AMOUNT = 1;

@@ -1,5 +1,5 @@
 import { type NonEmptyObject } from "type-fest";
-import { DialogBuilder, stripDisplayName } from "@growserver/utils";
+import { DialogBuilder, stripDisplayName } from "@monotopia/utils";
 import { Variant } from "growtopia.js";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";

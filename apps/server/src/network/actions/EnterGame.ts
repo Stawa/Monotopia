@@ -1,7 +1,8 @@
 import { Variant } from "growtopia.js";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { DialogBuilder } from "@growserver/utils";
+import { DialogBuilder } from "@monotopia/utils";
+import { APP_NAME } from "@monotopia/const";
 import { type NonEmptyObject } from "type-fest";
 import { World } from "../../core/World";
 import { tileFrom, tileUpdateMultiple } from "../../world/tiles";
@@ -19,12 +20,12 @@ export class EnterGame {
   ): Promise<void> {
     const tes = new DialogBuilder()
       .defaultColor()
-      .addLabelWithIcon("`wThe GrowServer Gazette``", "5016", "big")
+      .addLabelWithIcon(`\`wThe ${APP_NAME} Gazette\`\``, "5016", "big")
       .addSpacer("small")
       .raw(
         "add_image_button||interface/banner-transparent.rttex|bannerlayout|||\n",
       )
-      .addTextBox("Welcome to GrowServer")
+      .addTextBox(`Welcome to ${APP_NAME}`)
       .addQuickExit()
       .endDialog("gazzette_end", "Cancel", "Ok")
       .str();

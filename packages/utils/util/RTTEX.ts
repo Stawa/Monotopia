@@ -1,5 +1,5 @@
 import { deflateSync, inflateSync } from "zlib";
-import { RTPack, RTTXTR } from "@growserver/types";
+import { RTPack, RTTXTR } from "@monotopia/types";
 import ImageV2 from "imagescript/v2/framebuffer";
 import { ExtendBuffer } from "./ExtendBuffer";
 

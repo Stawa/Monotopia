@@ -1,8 +1,8 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
-import { getRoleName, parseRole } from "@growserver/const";
-import { Database, players, type Players } from "@growserver/db";
-import { formatToDisplayName, parseUserTarget } from "@growserver/utils";
+import { getRoleName, parseRole } from "@monotopia/const";
+import { Database, players, type Players } from "@monotopia/db";
+import { formatToDisplayName, parseUserTarget } from "@monotopia/utils";
 
 const usage = () => {
   console.log("Usage: pnpm give:role <target> <role>");

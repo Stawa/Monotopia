@@ -1,4 +1,4 @@
-import { WorldData } from "@growserver/types";
+import { WorldData } from "@monotopia/types";
 
 export abstract class WorldGen {
   public abstract data: WorldData;

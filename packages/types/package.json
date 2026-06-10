@@ -1,23 +1,23 @@
 {
-  "name": "@growserver/types",
+  "name": "@monotopia/types",
   "version": "0.0.0",
-  "description": "GrowServer types",
+  "description": "Monotopia shared types",
   "main": "./index.d.ts",
   "types": "./index.d.ts",
   "keywords": [],
-  "author": "JadlionHD <jadlion.dev@gmail.com>",
+  "author": "Stawa",
   "license": "MIT",
   "devDependencies": {
-    "@types/bun": "^1.3.1",
-    "@types/node": "^24.3.1",
-    "grow-items": "^1.3.0",
-    "typescript": "^5.9.3"
+    "@types/bun": "^1.3.14",
+    "@types/node": "^25.9.2",
+    "grow-items": "^1.3.5",
+    "typescript": "^6.0.3"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.19.0",
     "npm": ">=7.0.0"
   },
   "dependencies": {
-    "@growserver/const": "workspace:*"
+    "@monotopia/const": "workspace:*"
   }
 }

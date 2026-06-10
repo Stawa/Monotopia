@@ -1,7 +1,7 @@
 import { TextPacket, Variant } from "growtopia.js";
 import { Base } from "../core/Base";
 import { Peer } from "../core/Peer";
-import logger from "@growserver/logger";
+import logger from "@monotopia/logger";
 
 export class ConnectListener {
   constructor(public base: Base) {
@@ -10,7 +10,7 @@ export class ConnectListener {
 
   public run(netID: number): void {
     const peer = new Peer(this.base, netID);
-    const peerAddr = peer.enet;
+    const peerAddr = peer.native;
 
     logger.info(`Peer ${netID} [/${peerAddr.ip}:${peerAddr.port}] connected`);
     this.base.cache.peers.set(netID, peer.data);

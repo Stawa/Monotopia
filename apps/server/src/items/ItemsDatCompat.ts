@@ -21,7 +21,7 @@ export async function decodeItemsDatCompat(itemsDat: ItemsDat): Promise<void> {
       );
     }
 
-    itemsDat.meta.items.set(item.id.toString(), item);
+    itemsDat.meta.items.set(item.id, item);
   }
 }
 

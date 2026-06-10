@@ -1,9 +1,9 @@
-import { BlockFlags } from "@growserver/const";
+import { BlockFlags } from "@monotopia/const";
 import { type ItemDefinition } from "grow-items";
 import type { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import type { World } from "../../core/World";
-import type { TileData } from "@growserver/types";
+import type { TileData } from "@monotopia/types";
 import { sendGrowScanDialog } from "../../network/dialogs/GrowScan";
 import { Tile } from "../Tile";
 

@@ -2,8 +2,8 @@ import { type NonEmptyObject } from "type-fest";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { World } from "../../core/World";
-import { TileData } from "@growserver/types";
-import { ROLE, WORLD_CATEGORIES } from "@growserver/const";
+import { TileData } from "@monotopia/types";
+import { ROLE, WORLD_CATEGORIES } from "@monotopia/const";
 import { tileFrom } from "../../world/tiles";
 
 export class WorldCategoryEdit {

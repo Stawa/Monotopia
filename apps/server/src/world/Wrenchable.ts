@@ -1,6 +1,6 @@
-import { ActionTypes, BlockFlags } from "@growserver/const";
+import { ActionTypes, BlockFlags } from "@monotopia/const";
 import type { Base } from "../core/Base";
-import type { TileData } from "@growserver/types";
+import type { TileData } from "@monotopia/types";
 import type { ItemDefinition } from "grow-items";
 
 const WRENCHABLE_TILE_TYPES = new Set<number>([

@@ -1,9 +1,9 @@
 import { TankPacket, Variant } from "growtopia.js";
 import { Peer } from "../core/Peer";
 import type { World } from "../core/World";
-import { type TileData } from "@growserver/types";
+import { type TileData } from "@monotopia/types";
 import type { Base } from "../core/Base";
-import { ExtendBuffer } from "@growserver/utils";
+import { ExtendBuffer } from "@monotopia/utils";
 import { TileMap } from "./tiles";
 import {
   ActionTypes,
@@ -16,7 +16,7 @@ import {
   ROLE,
   TankTypes,
   TileFlags,
-} from "@growserver/const";
+} from "@monotopia/const";
 import { NormalTile } from "./tiles/NormalTile";
 import { ItemDefinition } from "grow-items";
 
@@ -371,12 +371,11 @@ export class Tile {
    * @param peer Peer that destroys it
    */
   public async onDestroy(peer: Peer): Promise<void> {
-    let destroyedItemID = 0;
+    const destroyedItemID = this.data.fg == 0 ? this.data.bg : this.data.fg;
+
     if (this.data.fg == 0) {
-      destroyedItemID = this.data.bg;
       this.data.bg = 0;
     } else {
-      destroyedItemID = this.data.fg;
       this.data.fg = 0;
     }
 

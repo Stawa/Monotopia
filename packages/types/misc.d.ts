@@ -1,7 +1,7 @@
 import { PeerData } from "./structures/peer";
 import { WorldData } from "./structures/world";
 import { Collection, CooldownOptions } from "./index";
-import { ItemsDatMeta } from "grow-items";
+import { ItemDefinition, ItemsDatMeta } from "grow-items";
 import { ItemsInfo } from "./structures/item-pages";
 
 export interface CDNContent {
@@ -15,10 +15,24 @@ export interface StringOptions {
   encoded?: boolean;
 }
 
+export type ItemMetadataMap = Omit<
+  ItemsDatMeta["items"],
+  "delete" | "get" | "has" | "set"
+> & {
+  delete(key: number | string): boolean;
+  get(key: number | string): ItemDefinition | undefined;
+  has(key: number | string): boolean;
+  set(key: number | string, value: ItemDefinition): ItemMetadataMap;
+};
+
+export type ItemMetadata = Omit<ItemsDatMeta, "items"> & {
+  items: ItemMetadataMap;
+};
+
 export interface ItemsData {
   hash: string;
   content: Buffer;
-  metadata: ItemsDatMeta;
+  metadata: ItemMetadata;
   wiki: ItemsInfo[];
 }
 

@@ -3,8 +3,8 @@ import {
   Y_END_DIRT,
   Y_LAVA_START,
   Y_START_DIRT,
-} from "@growserver/const";
-import { TileData, WorldData } from "@growserver/types";
+} from "@monotopia/const";
+import { TileData, WorldData } from "@monotopia/types";
 import { WorldGen } from "../WorldGen";
 
 export class Default extends WorldGen {

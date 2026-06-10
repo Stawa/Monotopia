@@ -2,7 +2,7 @@ import { type NonEmptyObject } from "type-fest";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
 import { DialogMap } from "../dialogs/index";
-import logger from "@growserver/logger";
+import logger from "@monotopia/logger";
 
 const NOOP_DIALOGS = new Set([
   "help_end",

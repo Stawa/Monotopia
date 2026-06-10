@@ -1,7 +1,7 @@
 import { Command } from "../Command";
 import { Base } from "../../core/Base";
 import { Peer } from "../../core/Peer";
-import { DEFAULT_SKIN_COLOR } from "@growserver/const";
+import { DEFAULT_SKIN_COLOR } from "@monotopia/const";
 import { Variant } from "growtopia.js";
 
 function parseSkinColor(value: string): number | undefined {

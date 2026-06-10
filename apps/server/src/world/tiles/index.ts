@@ -1,11 +1,11 @@
 import type { Class } from "type-fest";
-import { ActionTypes, TankTypes } from "@growserver/const";
+import { ActionTypes, TankTypes } from "@monotopia/const";
 import { DoorTile } from "./DoorTile";
 import { NormalTile } from "./NormalTile";
 import { SignTile } from "./SignTile";
 import { Tile } from "../Tile";
 import type { World } from "../../core/World";
-import type { TileData } from "@growserver/types";
+import type { TileData } from "@monotopia/types";
 import { LockTile } from "./LockTile";
 import type { Base } from "../../core/Base";
 import { HeartMonitorTile } from "./HeartMonitorTile";
@@ -16,9 +16,9 @@ import { DiceTile } from "./DiceTile";
 import { SeedTile } from "./SeedTile";
 import { VendingMachineTile } from "./VendingMachineTile";
 import { StatsBlockTile } from "./StatsBlockTile";
-import { ExtendBuffer } from "@growserver/utils";
+import { ExtendBuffer } from "@monotopia/utils";
 import { TankPacket } from "growtopia.js";
-import logger from "@growserver/logger";
+import logger from "@monotopia/logger";
 
 const TileMap: Record<number, Class<Tile>> = {
   [ActionTypes.DOOR]:            DoorTile,

@@ -3,8 +3,8 @@ import { ItemsDat } from "grow-items";
 import { join } from "path";
 import { Scraper } from "./scraper";
 import { Parser } from "./parser";
-import { downloadItemsDat, getLatestItemsDatName } from "@growserver/utils";
-import logger from "@growserver/logger";
+import { downloadItemsDat, getLatestItemsDatName } from "@monotopia/utils";
+import logger from "@monotopia/logger";
 
 __dirname = process.cwd();
 
