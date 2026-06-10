@@ -25,7 +25,7 @@ importers:
         version: 30.1.0
       '@hono/node-server':
         specifier: ^2.0.4
-        version: 2.0.4(hono@4.12.23)
+        version: 2.0.4(hono@4.12.25)
       '@monotopia/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -51,8 +51,8 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0
       hono:
-        specifier: ^4.12.23
-        version: 4.12.23
+        specifier: ^4.12.25
+        version: 4.12.25
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -83,7 +83,7 @@ importers:
         version: 30.1.0
       '@hono/node-server':
         specifier: ^2.0.4
-        version: 2.0.4(hono@4.12.23)
+        version: 2.0.4(hono@4.12.25)
       '@monotopia/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -109,8 +109,8 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0
       hono:
-        specifier: ^4.12.23
-        version: 4.12.23
+        specifier: ^4.12.25
+        version: 4.12.25
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -1633,8 +1633,8 @@ packages:
   help-me@5.0.0:
     resolution: {integrity: sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg==}
 
-  hono@4.12.23:
-    resolution: {integrity: sha512-eIaZ9qDgu7XV0pxOCrg7/WhnQ6Ivm22UcxhXx/A3dcbqbbYgBEkc6e/J/s7j2tS96zoB0S9VBdLwQNCWwUo4LA==}
+  hono@4.12.25:
+    resolution: {integrity: sha512-2NFaIyNVgJmBs/ecmtGzlmluTFs5cHEWGTdu0t1HBwYzoGXOL5nUQBRMXsXWla5i4KkG//QMzVP88m1+I3fdAQ==}
     engines: {node: '>=16.9.0'}
 
   ieee754@1.2.1:
@@ -2389,9 +2389,9 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@hono/node-server@2.0.4(hono@4.12.23)':
+  '@hono/node-server@2.0.4(hono@4.12.25)':
     dependencies:
-      hono: 4.12.23
+      hono: 4.12.25
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -3099,7 +3099,7 @@ snapshots:
 
   help-me@5.0.0: {}
 
-  hono@4.12.23: {}
+  hono@4.12.25: {}
 
   ieee754@1.2.1: {}
 
