@@ -41,6 +41,8 @@ export const ActionMap: Record<
   ["wrench"]:               Wrench,
   ["buy"]:                  StoreBuy,
   ["store"]:                StoreHandler,
+  ["storenavigate"]:        StoreBuy,
+  ["killstore"]:            StoreHandler,
   ["on-friend"]:            OnFriend,
   ["friend"]:               OnFriend,
   ["friends"]:              OnFriend,

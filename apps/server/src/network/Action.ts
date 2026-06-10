@@ -24,8 +24,12 @@ export class IActionPacket {
     try {
       const Class = ActionMap[actionType];
 
-      if (!Class)
-        throw new Error(`No Action class found with action name ${actionType}`);
+      if (!Class) {
+        logger.warn(
+          `No Action class found for action='${actionType}' from netID=${this.peer.data.netID} userID=${this.peer.data.userID} obj=${JSON.stringify(this.obj)}`,
+        );
+        return;
+      }
 
       const action = new Class(this.base, this.peer);
       await action.execute(this.obj);

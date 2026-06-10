@@ -188,9 +188,19 @@ export class StoreBuy {
       !validTabs.includes(action.item) &&
       this.findStoreItemByName(action.item)
     ) {
-      this.peer.addItemInven(actionItem?.itemId as number, 1);
-      this.peer.data.gems -= (actionItem?.cost as number) ?? 0;
-      this.peer.setGems(this.peer.data.gems);
+      const cost = Number(actionItem?.cost ?? 0) || 0;
+      if (this.peer.data.gems < cost) {
+        this.peer.send(
+          Variant.from(
+            "OnConsoleMessage",
+            "`4Not enough gems to purchase that item.``",
+          ),
+        );
+      } else {
+        this.peer.addItemInven(actionItem?.itemId as number, 1);
+        this.peer.data.gems -= cost;
+        this.peer.setGems(this.peer.data.gems);
+      }
     }
 
     this.peer.saveToCache();

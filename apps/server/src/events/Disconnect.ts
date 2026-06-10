@@ -10,7 +10,7 @@ export class DisconnectListener {
     logger.info('Listening ENet "disconnect" event');
   }
 
-  public run(netID: number): void {
+  public async run(netID: number): Promise<void> {
     const peer = this.base.cache.peers.find((id) => id.netID == netID);
     if (peer && peer.heartMonitors) {
       peer.heartMonitors.forEach((indexes, worldName) => {
@@ -36,6 +36,13 @@ export class DisconnectListener {
     }
 
     logger.info(`Peer ${netID} disconnected`);
+    try {
+      const p = new (await import("../core/Peer")).Peer(this.base, netID);
+      await p.saveToDatabase();
+    } catch (e) {
+      console.error(`Failed saving peer ${netID} on disconnect:`, e);
+    }
+
     this.base.cache.peers.delete(netID);
   }
 }

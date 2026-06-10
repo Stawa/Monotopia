@@ -4,6 +4,7 @@ import { Peer } from "../../core/Peer";
 import { World } from "../../core/World";
 import { TileData } from "@monotopia/types";
 import { ActionTypes, ITEM_RAINBOW_SHOES } from "@monotopia/const";
+import logger from "@monotopia/logger";
 
 const ROYAL_RAINBOW_REFRESH_MS = 1000;
 const ROYAL_RADAR_COOLDOWN_MS = 5000;
@@ -34,6 +35,10 @@ export class State {
     this.peer.data.y = this.tank.data?.yPos;
     this.peer.data.rotatedLeft = Boolean(
       (this.tank.data?.state as number) & 0x10,
+    );
+
+    logger.debug(
+      `PlayerMove netID=${this.peer.data.netID} x=${this.tank.data?.xPos} y=${this.tank.data?.yPos} xPunch=${this.tank.data?.xPunch} yPunch=${this.tank.data?.yPunch} state=${this.tank.data?.state}`,
     );
 
     this.peer.saveToCache();
